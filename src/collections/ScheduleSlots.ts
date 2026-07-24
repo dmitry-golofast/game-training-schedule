@@ -5,6 +5,7 @@ import type {
 } from 'payload'
 
 import { sendSlotCreatedEmail } from '@/lib/email'
+import { writeOffSession } from '@/lib/subscriptions'
 import { studentScopedOrAdmin } from '@/payload/access/student-scoped'
 
 const ALLOWED_DURATIONS = [30, 60, 90, 120]
@@ -148,6 +149,45 @@ export const ScheduleSlots: CollectionConfig = {
           }
         } catch {
           // Email/notification failures must not break slot creation.
+        }
+      }) satisfies CollectionAfterChangeHook,
+      /**
+       * Credit write-off: when a slot transitions to `done`, consume one
+       * session from the student's active subscription (every group member
+       * for group slots). Idempotent — see `writeOffSession`.
+       */
+      (async ({ doc, previousDoc, operation, req }) => {
+        if (operation !== 'update') return
+        const prevStatus = previousDoc?.status
+        const newStatus = doc.status
+        if (prevStatus === 'done' || newStatus !== 'done') return
+
+        const slot = doc as unknown as {
+          id: string
+          kind: SlotKind
+          student: string | { id: string } | null
+          group: string | { id: string; members?: string[] | { id: string }[] } | null
+        }
+
+        try {
+          if (slot.kind === 'group' && slot.group) {
+            const groupId = typeof slot.group === 'object' ? slot.group.id : slot.group
+            const group = await req.payload.findByID({
+              collection: 'groups',
+              id: groupId,
+              overrideAccess: true,
+              depth: 0,
+            })
+            for (const m of group.members ?? []) {
+              const memberId = typeof m === 'object' && m ? m.id : (m as string)
+              await writeOffSession(req.payload, memberId, slot.id, 'group')
+            }
+          } else if (slot.student) {
+            const studentId = typeof slot.student === 'object' ? slot.student.id : slot.student
+            await writeOffSession(req.payload, studentId, slot.id, 'individual')
+          }
+        } catch {
+          // Write-off failures must not block the status change.
         }
       }) satisfies CollectionAfterChangeHook,
     ],

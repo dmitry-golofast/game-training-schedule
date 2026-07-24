@@ -72,6 +72,11 @@ export interface Config {
     'user-notes': UserNote;
     'schedule-slots': ScheduleSlot;
     groups: Group;
+    subscriptions: Subscription;
+    'credit-transactions': CreditTransaction;
+    documents: Document;
+    payments: Payment;
+    'sick-leaves': SickLeaf;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +89,11 @@ export interface Config {
     'user-notes': UserNotesSelect<false> | UserNotesSelect<true>;
     'schedule-slots': ScheduleSlotsSelect<false> | ScheduleSlotsSelect<true>;
     groups: GroupsSelect<false> | GroupsSelect<true>;
+    subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
+    'credit-transactions': CreditTransactionsSelect<false> | CreditTransactionsSelect<true>;
+    documents: DocumentsSelect<false> | DocumentsSelect<true>;
+    payments: PaymentsSelect<false> | PaymentsSelect<true>;
+    'sick-leaves': SickLeavesSelect<false> | SickLeavesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -287,6 +297,150 @@ export interface Group {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptions".
+ */
+export interface Subscription {
+  id: string;
+  student: string | User;
+  kind: 'individual' | 'group';
+  /**
+   * Сколько занятий куплено.
+   */
+  totalCredits: number;
+  /**
+   * Осталось занятий (управляется системой).
+   */
+  remainingCredits: number;
+  /**
+   * Начало действия абонемента.
+   */
+  validFrom: string;
+  /**
+   * Окончание действия абонемента.
+   */
+  validUntil: string;
+  status: 'active' | 'expired' | 'closed';
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "credit-transactions".
+ */
+export interface CreditTransaction {
+  id: string;
+  student: string | User;
+  subscription: string | Subscription;
+  /**
+   * Слот, за который списано занятие (если применимо).
+   */
+  slot?: (string | null) | ScheduleSlot;
+  /**
+   * +N при покупке, −1 при списании.
+   */
+  delta: number;
+  reason: 'purchase' | 'session' | 'refund' | 'adjustment';
+  /**
+   * Остаток на абонементе после операции.
+   */
+  balanceAfter?: number | null;
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "documents".
+ */
+export interface Document {
+  id: string;
+  /**
+   * Ученик, к которому относится документ.
+   */
+  student: string | User;
+  docType: 'medic' | 'contract' | 'other';
+  title: string;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments".
+ */
+export interface Payment {
+  id: string;
+  student: string | User;
+  /**
+   * Связанный абонемент (необязательно).
+   */
+  subscription?: (string | null) | Subscription;
+  /**
+   * Сумма платежа.
+   */
+  amount: number;
+  currency?: ('RUB' | 'USD' | 'EUR') | null;
+  /**
+   * Начало оплаченного периода.
+   */
+  periodFrom: string;
+  /**
+   * Конец оплаченного периода.
+   */
+  periodTo: string;
+  method?: ('cash' | 'card' | 'transfer') | null;
+  /**
+   * Дата платежа.
+   */
+  paidAt: string;
+  /**
+   * Чек / квитанция (документ).
+   */
+  receipt?: (string | null) | Document;
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sick-leaves".
+ */
+export interface SickLeaf {
+  id: string;
+  student: string | User;
+  /**
+   * Тренировка, по которой подан больничный.
+   */
+  slot: string | ScheduleSlot;
+  /**
+   * Описание болезни / причина.
+   */
+  reason: string;
+  /**
+   * Медицинская справка (необязательно).
+   */
+  document?: (string | null) | Document;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedAt?: string | null;
+  /**
+   * Комментарий тренера при рассмотрении.
+   */
+  reviewNote?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -328,6 +482,26 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'groups';
         value: string | Group;
+      } | null)
+    | ({
+        relationTo: 'subscriptions';
+        value: string | Subscription;
+      } | null)
+    | ({
+        relationTo: 'credit-transactions';
+        value: string | CreditTransaction;
+      } | null)
+    | ({
+        relationTo: 'documents';
+        value: string | Document;
+      } | null)
+    | ({
+        relationTo: 'payments';
+        value: string | Payment;
+      } | null)
+    | ({
+        relationTo: 'sick-leaves';
+        value: string | SickLeaf;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -469,6 +643,91 @@ export interface GroupsSelect<T extends boolean = true> {
   name?: T;
   members?: T;
   description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptions_select".
+ */
+export interface SubscriptionsSelect<T extends boolean = true> {
+  student?: T;
+  kind?: T;
+  totalCredits?: T;
+  remainingCredits?: T;
+  validFrom?: T;
+  validUntil?: T;
+  status?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "credit-transactions_select".
+ */
+export interface CreditTransactionsSelect<T extends boolean = true> {
+  student?: T;
+  subscription?: T;
+  slot?: T;
+  delta?: T;
+  reason?: T;
+  balanceAfter?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "documents_select".
+ */
+export interface DocumentsSelect<T extends boolean = true> {
+  student?: T;
+  docType?: T;
+  title?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments_select".
+ */
+export interface PaymentsSelect<T extends boolean = true> {
+  student?: T;
+  subscription?: T;
+  amount?: T;
+  currency?: T;
+  periodFrom?: T;
+  periodTo?: T;
+  method?: T;
+  paidAt?: T;
+  receipt?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sick-leaves_select".
+ */
+export interface SickLeavesSelect<T extends boolean = true> {
+  student?: T;
+  slot?: T;
+  reason?: T;
+  document?: T;
+  status?: T;
+  reviewedAt?: T;
+  reviewNote?: T;
   updatedAt?: T;
   createdAt?: T;
 }

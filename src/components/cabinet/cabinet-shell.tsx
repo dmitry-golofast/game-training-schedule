@@ -2,7 +2,10 @@ import {
   CalendarDaysIcon,
   GraduationCapIcon,
   LayoutDashboardIcon,
+  ReceiptIcon,
   SettingsIcon,
+  StethoscopeIcon,
+  TicketIcon,
   UserIcon,
   UsersIcon,
 } from 'lucide-react'
@@ -27,6 +30,9 @@ const COMMON_NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   { href: '/cabinet/students', label: 'Ученики', icon: GraduationCapIcon },
   { href: '/cabinet/groups', label: 'Группы', icon: UsersIcon },
+  { href: '/cabinet/subscriptions', label: 'Абонементы', icon: TicketIcon },
+  { href: '/cabinet/payments', label: 'Оплаты', icon: ReceiptIcon },
+  { href: '/cabinet/sick-leaves', label: 'Больничные', icon: StethoscopeIcon },
 ]
 
 export function CabinetShell({ user, children }: { user: User; children: React.ReactNode }) {

@@ -52,3 +52,6 @@ next-env.d.ts
 
 # Husky internals
 /.husky/_/
+
+# ZCode agent artifacts
+/.zcode/

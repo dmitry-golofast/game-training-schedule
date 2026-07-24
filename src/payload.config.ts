@@ -7,9 +7,14 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
+import { CreditTransactions } from './collections/CreditTransactions'
+import { Documents } from './collections/Documents'
 import { Groups } from './collections/Groups'
 import { Media } from './collections/Media'
+import { Payments } from './collections/Payments'
 import { ScheduleSlots } from './collections/ScheduleSlots'
+import { SickLeaves } from './collections/SickLeaves'
+import { Subscriptions } from './collections/Subscriptions'
 import { UserNotes } from './collections/UserNotes'
 import { Users } from './collections/Users'
 
@@ -33,7 +38,18 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, UserNotes, ScheduleSlots, Groups],
+  collections: [
+    Users,
+    Media,
+    UserNotes,
+    ScheduleSlots,
+    Groups,
+    Subscriptions,
+    CreditTransactions,
+    Documents,
+    Payments,
+    SickLeaves,
+  ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -63,6 +79,7 @@ export default buildConfig({
           s3Storage({
             collections: {
               media: true,
+              documents: true,
             },
             bucket: process.env.S3_BUCKET!,
             config: {
