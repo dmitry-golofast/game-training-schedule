@@ -4,13 +4,16 @@
 #
 # Prerequisites:
 #   1. Domain slotory.ru must point to this server's IP.
-#   2. ./deploy.sh must have been run (nginx + certbot containers running).
-#   3. Run this script ONCE: ./deploy-ssl.sh
+#   2. docker compose up -d (nginx running with HTTP-only config).
+#   3. Run: ./deploy-ssl.sh your@email.ru
 #
 set -euo pipefail
 
 DOMAIN="slotory.ru"
 EMAIL="${1:-admin@slotory.ru}"
+APP_DIR="/opt/slotory"
+
+cd "$APP_DIR"
 
 echo "=== SSL Setup for $DOMAIN ==="
 
@@ -25,7 +28,11 @@ docker compose run --rm certbot certonly \
     -d "$DOMAIN" \
     -d "www.$DOMAIN"
 
-# Step 2: Restart nginx to pick up certificates
+# Step 2: Replace nginx config with SSL version
+echo ">>> Switching nginx to HTTPS config..."
+cp nginx/slotory.ru.ssl.conf nginx/slotory.ru.conf
+
+# Step 3: Restart nginx to pick up certificates + new config
 echo ">>> Restarting nginx..."
 docker compose restart nginx
 
