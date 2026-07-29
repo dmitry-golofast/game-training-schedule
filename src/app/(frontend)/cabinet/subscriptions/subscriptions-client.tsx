@@ -118,7 +118,7 @@ function CreateForm({ students, onDone }: { students: Student[]; onDone: () => v
         <Input id="sub-total" name="totalCredits" type="number" min={1} defaultValue={8} required />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="sub-from">Действует с</Label>
           <Input id="sub-from" name="validFrom" type="date" required />
@@ -133,7 +133,7 @@ function CreateForm({ students, onDone }: { students: Student[]; onDone: () => v
       <div className="rounded-md border border-border p-3">
         <p className="mb-3 text-sm font-medium">Оплата</p>
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="sub-amount">Сумма</Label>
               <Input
@@ -160,7 +160,7 @@ function CreateForm({ students, onDone }: { students: Student[]; onDone: () => v
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="sub-paidAt">Дата оплаты</Label>
               <Input
@@ -278,7 +278,7 @@ function EditForm({
           </Select>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <Label htmlFor="edit-from">Действует с</Label>
             <Input

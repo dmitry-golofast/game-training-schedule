@@ -114,7 +114,7 @@ function PaymentForm({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <Label htmlFor="pay-amount">Сумма</Label>
             <Input
@@ -142,7 +142,7 @@ function PaymentForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <Label htmlFor="pay-from">Период с</Label>
             <Input
@@ -165,7 +165,7 @@ function PaymentForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <Label htmlFor="pay-paidAt">Дата платежа</Label>
             <Input

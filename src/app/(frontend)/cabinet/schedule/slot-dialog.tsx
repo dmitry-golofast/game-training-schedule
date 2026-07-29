@@ -352,7 +352,7 @@ function SlotForm({
                               }))
                             }
                             className={cn(
-                              'flex size-8 items-center justify-center rounded-md border text-xs font-medium transition-colors',
+                              'flex size-10 items-center justify-center rounded-md border text-xs font-medium transition-colors',
                               active
                                 ? 'border-primary bg-primary text-primary-foreground'
                                 : 'hover:bg-accent',

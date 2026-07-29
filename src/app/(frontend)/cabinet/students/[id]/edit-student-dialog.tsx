@@ -63,7 +63,7 @@ function EditForm({ student, onDone }: { student: StudentData; onDone: () => voi
     >
       <input type="hidden" name="id" value={student.id} />
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="edit-lastName">
             Фамилия <span className="text-destructive">*</span>
