@@ -22,6 +22,7 @@ type NavItem = { href: string; label: string; icon: React.ComponentType<{ classN
 const COMMON_NAV: NavItem[] = [
   { href: '/cabinet', label: 'Обзор', icon: LayoutDashboardIcon },
   { href: '/cabinet/schedule', label: 'Расписание', icon: CalendarDaysIcon },
+  { href: '/cabinet/sick-leaves', label: 'Больничные', icon: StethoscopeIcon },
   { href: '/cabinet/profile', label: 'Профиль', icon: UserIcon },
   { href: '/cabinet/settings', label: 'Настройки', icon: SettingsIcon },
 ]
@@ -32,7 +33,6 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/cabinet/groups', label: 'Группы', icon: UsersIcon },
   { href: '/cabinet/subscriptions', label: 'Абонементы', icon: TicketIcon },
   { href: '/cabinet/payments', label: 'Оплаты', icon: ReceiptIcon },
-  { href: '/cabinet/sick-leaves', label: 'Больничные', icon: StethoscopeIcon },
 ]
 
 export function CabinetShell({ user, children }: { user: User; children: React.ReactNode }) {

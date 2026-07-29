@@ -167,6 +167,20 @@ export const ScheduleSlots: CollectionConfig = {
           kind: SlotKind
           student: string | { id: string } | null
           group: string | { id: string; members?: string[] | { id: string }[] } | null
+          attendance?: Array<{ student: string | { id: string }; present: boolean }> | null
+        }
+
+        // Build the set of student IDs who were marked present.
+        // If attendance is empty/absent, fall back to "all assigned" (legacy).
+        const presentIds = new Set<string>()
+        const hasAttendance = Boolean(slot.attendance && slot.attendance.length > 0)
+        if (hasAttendance && slot.attendance) {
+          for (const a of slot.attendance) {
+            if (a.present) {
+              const id = typeof a.student === 'object' ? a.student.id : (a.student as string)
+              presentIds.add(id)
+            }
+          }
         }
 
         try {
@@ -180,11 +194,17 @@ export const ScheduleSlots: CollectionConfig = {
             })
             for (const m of group.members ?? []) {
               const memberId = typeof m === 'object' && m ? m.id : (m as string)
-              await writeOffSession(req.payload, memberId, slot.id, 'group')
+              // Only write off if: no attendance data (legacy) OR student was present.
+              if (!hasAttendance || presentIds.has(memberId)) {
+                await writeOffSession(req.payload, memberId, slot.id, 'group')
+              }
             }
           } else if (slot.student) {
             const studentId = typeof slot.student === 'object' ? slot.student.id : slot.student
-            await writeOffSession(req.payload, studentId, slot.id, 'individual')
+            // Only write off if: no attendance data (legacy) OR student was present.
+            if (!hasAttendance || presentIds.has(studentId)) {
+              await writeOffSession(req.payload, studentId, slot.id, 'individual')
+            }
           }
         } catch {
           // Write-off failures must not block the status change.
@@ -365,6 +385,28 @@ export const ScheduleSlots: CollectionConfig = {
         hidden: true,
         condition: (data) => Boolean(data.isRecurringChild),
       },
+    },
+    {
+      name: 'attendance',
+      type: 'array',
+      admin: {
+        hidden: true,
+        description: 'Журнал посещаемости (управляется через UI, не через админку).',
+      },
+      fields: [
+        {
+          name: 'student',
+          type: 'relationship',
+          relationTo: 'users',
+          required: true,
+          filterOptions: () => ({ role: { equals: 'user' } }),
+        },
+        {
+          name: 'present',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+      ],
     },
   ],
 }

@@ -329,3 +329,59 @@ export async function deleteSlotAction(_prev: unknown, formData: FormData): Prom
   revalidatePath('/cabinet/schedule')
   return { success: true }
 }
+
+/**
+ * Admin-only: save attendance for a slot and mark it as done.
+ *
+ * Reads `slotId` and multiple `student_<id> = 'true'|'false'` pairs from
+ * FormData. Sets the slot's `attendance` array and transitions status to
+ * `done`, which triggers the write-off hook (only for present students).
+ */
+export async function saveAttendanceAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<ActionResult> {
+  const me = await getCurrentUser()
+  if (!me || me.role !== 'admin') {
+    return { success: false, error: 'Недостаточно прав.' }
+  }
+
+  const slotId = String(formData.get('slotId') ?? '').trim()
+  if (!slotId) {
+    return { success: false, error: 'Не указан ID тренировки.' }
+  }
+
+  const attendance: Array<{ student: string; present: boolean }> = []
+  for (const [key, value] of formData.entries()) {
+    if (key.startsWith('student_')) {
+      const studentId = key.slice('student_'.length)
+      if (studentId) {
+        attendance.push({ student: studentId, present: String(value) !== 'false' })
+      }
+    }
+  }
+
+  if (attendance.length === 0) {
+    return { success: false, error: 'Нет учеников для отметки.' }
+  }
+
+  const payload = await getPayloadClient()
+
+  try {
+    await payload.update({
+      collection: 'schedule-slots',
+      id: slotId,
+      overrideAccess: true,
+      data: {
+        status: 'done',
+        attendance,
+      },
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { success: false, error: `Не удалось сохранить журнал. ${message}` }
+  }
+
+  revalidatePath('/cabinet/schedule')
+  return { success: true }
+}

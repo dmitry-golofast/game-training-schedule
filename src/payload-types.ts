@@ -139,7 +139,30 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
+  /**
+   * Полное имя (генерируется автоматически из ФИО).
+   */
   name?: string | null;
+  /**
+   * Фамилия
+   */
+  lastName?: string | null;
+  /**
+   * Имя
+   */
+  firstName?: string | null;
+  /**
+   * Отчество (необязательно)
+   */
+  middleName?: string | null;
+  /**
+   * Дата рождения
+   */
+  birthDate?: string | null;
+  /**
+   * Телефон родителя (обязательно для учащихся до 18 лет).
+   */
+  parentPhone?: string | null;
   role: 'user' | 'parent' | 'admin';
   /**
    * Законный представитель ученика (роль «Родитель»).
@@ -277,6 +300,16 @@ export interface ScheduleSlot {
   };
   isRecurringChild?: boolean | null;
   recurrenceParent?: (string | null) | ScheduleSlot;
+  /**
+   * Журнал посещаемости (управляется через UI, не через админку).
+   */
+  attendance?:
+    | {
+        student: string | User;
+        present?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -551,6 +584,11 @@ export interface PayloadMigration {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  lastName?: T;
+  firstName?: T;
+  middleName?: T;
+  birthDate?: T;
+  parentPhone?: T;
   role?: T;
   parent?: T;
   avatar?: T;
@@ -632,6 +670,13 @@ export interface ScheduleSlotsSelect<T extends boolean = true> {
       };
   isRecurringChild?: T;
   recurrenceParent?: T;
+  attendance?:
+    | T
+    | {
+        student?: T;
+        present?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

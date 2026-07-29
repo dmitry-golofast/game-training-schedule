@@ -1,43 +1,68 @@
-version: '3'
-
 services:
-  payload:
-    image: node:20-alpine
-    ports:
-      - '3000:3000'
-    volumes:
-      - .:/home/node/app
-      - node_modules:/home/node/app/node_modules
-    working_dir: /home/node/app/
-    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm dev"
-    depends_on:
-      - mongo
-      # - postgres
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: slotory-app
+    restart: unless-stopped
     env_file:
       - .env
-
-  # Ensure your DATABASE_URL uses 'mongo' as the hostname ie. mongodb://mongo/my-db-name
-  mongo:
-    image: mongo:latest
-    ports:
-      - '27017:27017'
-    command:
-      - --storageEngine=wiredTiger
     volumes:
-      - data:/data/db
-    logging:
-      driver: none
+      - media:/app/media
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - slotory-net
 
-  # Uncomment the following to use postgres
-  # postgres:
-  #   restart: always
-  #   image: postgres:latest
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
+  mongo:
+    image: mongo:7
+    container_name: slotory-mongo
+    restart: unless-stopped
+    command: ['--storageEngine', 'wiredTiger']
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', 'db.runCommand({ ping: 1 }).ok']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - slotory-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: slotory-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx:/etc/nginx/conf.d:ro
+      - certbot-web:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:ro
+    depends_on:
+      - app
+    networks:
+      - slotory-net
+
+  certbot:
+    image: certbot/certbot
+    container_name: slotory-certbot
+    volumes:
+      - certbot-web:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+    entrypoint: ['/bin/sh', '-c']
+    command: ['trap exit TERM; while :; do sleep 6h & wait $${!}; certbot renew; done']
+    networks:
+      - slotory-net
 
 volumes:
-  data:
-  # pgdata:
-  node_modules:
+  mongo-data:
+  media:
+  certbot-web:
+  certbot-certs:
+
+networks:
+  slotory-net:
+    driver: bridge

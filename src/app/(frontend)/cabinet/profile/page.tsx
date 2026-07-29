@@ -3,6 +3,7 @@ import { Separator } from '@/components/ui/separator'
 import { PreferencesForm } from '@/app/(frontend)/cabinet/profile/preferences-form'
 import { DocumentsSection } from '@/app/(frontend)/cabinet/profile/documents-section'
 import { PaymentHistory } from '@/app/(frontend)/cabinet/profile/payment-history'
+import { ChildrenSection } from '@/app/(frontend)/cabinet/profile/children-section'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
 import { timezoneLabel } from '@/lib/timezone'
 
@@ -24,6 +25,7 @@ export default async function ProfilePage() {
   let viewableStudents: StudentRef[] = []
   let studentIds: string[] = []
   let canSelectStudent = false
+  let childrenData: { id: string; name: string; email: string; birthDate?: string | null }[] = []
 
   if (me.role === 'user') {
     viewableStudents = [{ id: me.id, name: me.name || me.email }]
@@ -39,6 +41,12 @@ export default async function ProfilePage() {
     viewableStudents = children.docs.map((c) => ({ id: c.id, name: c.name || c.email }))
     studentIds = children.docs.map((c) => c.id)
     canSelectStudent = viewableStudents.length > 1
+    childrenData = children.docs.map((c) => ({
+      id: c.id,
+      name: [c.lastName, c.firstName].filter(Boolean).join(' ') || c.name || c.email,
+      email: c.email,
+      birthDate: c.birthDate ?? null,
+    }))
   } else if (me.role === 'admin') {
     // Admin can upload for any student.
     const all = await payload.find({
@@ -159,6 +167,21 @@ export default async function ProfilePage() {
           <Row label="Часовой пояс" value={me.timezone ? timezoneLabel(me.timezone) : '—'} />
         </CardContent>
       </Card>
+
+      {/* Мои дети — только для родителей */}
+      {me.role === 'parent' ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Мои дети</CardTitle>
+            <CardDescription>
+              Привяжите учеников по их email, чтобы видеть их расписание и данные.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChildrenSection children={childrenData} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Абонемент — виджет остатка (ТЗ п.4) */}
       <Card>

@@ -1,6 +1,7 @@
 'use client'
 
 import { CalendarPlusIcon, RepeatIcon } from 'lucide-react'
+import { AttendanceDialog } from '@/app/(frontend)/cabinet/schedule/attendance-dialog'
 import { useMemo, useState } from 'react'
 
 import { SlotDialog } from '@/app/(frontend)/cabinet/schedule/slot-dialog'
@@ -150,11 +151,22 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
               const rows = slot.durationMin / SLOT_STEP_MIN
               const top = rowIndex * ROW_HEIGHT_PX
               const height = rows * ROW_HEIGHT_PX
+              // Build participant list for the attendance dialog.
+              const participants =
+                slot.kind === 'group' && slot.group
+                  ? (groups.find((g) => g.id === slot.group?.id)?.members ?? [])
+                  : slot.student
+                    ? [slot.student]
+                    : []
               return (
-                <button
+                <div
                   key={slot.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => (canEdit ? openEdit(slot) : undefined)}
+                  onKeyDown={(e) => {
+                    if (canEdit && (e.key === 'Enter' || e.key === ' ')) openEdit(slot)
+                  }}
                   className={cn(
                     'absolute inset-x-2 flex flex-col items-start gap-0.5 overflow-hidden rounded-md border border-l-4 border-border px-3 py-1.5 text-left text-xs shadow-sm transition-colors',
                     STATUS_STYLES[slot.status],
@@ -162,6 +174,14 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
                   )}
                   style={{ top: top + 1, height: height - 2 }}
                 >
+                  {/* Attendance journal button for planned slots (admin only) */}
+                  {canEdit && slot.status === 'planned' && participants.length > 0 ? (
+                    <AttendanceDialog
+                      slotId={slot.id}
+                      slotLabel={`${formatTimeInTz(start, timezone)} · ${slotTargetLabel(slot)}`}
+                      participants={participants}
+                    />
+                  ) : null}
                   <span className="flex items-center gap-1 font-semibold">
                     {formatTimeInTz(start, timezone)} –{' '}
                     {formatTimeInTz(
@@ -179,7 +199,7 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
                   {height >= ROW_HEIGHT_PX * 1.5 ? (
                     <span className="opacity-70">{STATUS_LABEL[slot.status]}</span>
                   ) : null}
-                </button>
+                </div>
               )
             })}
 

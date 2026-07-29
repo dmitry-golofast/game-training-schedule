@@ -16,7 +16,7 @@ type Payment = {
   periodTo: string
   method?: string | null
   paidAt: string
-  student: { id: string; name: string } | null
+  student?: { id: string; name: string } | null
 }
 
 const METHOD_LABEL: Record<string, string> = {

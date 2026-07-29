@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { StudentsClient } from '@/app/(frontend)/cabinet/students/students-client'
@@ -64,24 +65,29 @@ export default async function StudentsPage() {
               {studentsResult.docs.map((student) => {
                 const parentUser = typeof student.parent === 'object' ? student.parent : null
                 return (
-                  <li
-                    key={student.id}
-                    className="flex items-center justify-between gap-3 px-4 py-3"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-medium">{student.name || 'Без имени'}</span>
-                      <span className="text-xs text-muted-foreground">{student.email}</span>
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      {parentUser && (
-                        <span>
-                          Родитель:{' '}
-                          <span className="font-medium text-foreground">
-                            {parentUser.name || parentUser.email}
-                          </span>
-                        </span>
-                      )}
-                    </div>
+                  <li key={student.id}>
+                    <Link
+                      href={`/cabinet/students/${student.id}`}
+                      className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-accent"
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium">{student.name || 'Без имени'}</span>
+                        <span className="text-xs text-muted-foreground">{student.email}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right text-xs text-muted-foreground">
+                          {parentUser ? (
+                            <span>
+                              Родитель:{' '}
+                              <span className="font-medium text-foreground">
+                                {parentUser.name || parentUser.email}
+                              </span>
+                            </span>
+                          ) : null}
+                        </div>
+                        <span className="text-muted-foreground">→</span>
+                      </div>
+                    </Link>
                   </li>
                 )
               })}

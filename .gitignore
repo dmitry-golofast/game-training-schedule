@@ -4,6 +4,7 @@
 .pnp.js
 .pnp.*
 .yarn/install-state.gz
+/documents
 
 # Testing
 /coverage
@@ -28,6 +29,7 @@ pnpm-debug.log*
 # Local env files (keep .env.example tracked)
 .env
 .env*.local
+.env.production
 test.env
 
 # Vercel

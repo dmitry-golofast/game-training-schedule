@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckIcon, XIcon } from 'lucide-react'
+import { CheckIcon, FileTextIcon, XIcon } from 'lucide-react'
 import { useActionState, useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
@@ -18,6 +18,8 @@ type Item = {
   createdAt: string
   student: { id: string; name: string } | null
   slot: { id: string; startAt: string } | null
+  documentUrl?: string | null
+  documentTitle?: string | null
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -31,19 +33,19 @@ const STATUS_LABEL: Record<string, string> = {
   rejected: 'Отклонено',
 }
 
-export function SickLeavesClient({ items }: { items: Item[] }) {
+export function SickLeavesClient({ items, isAdmin }: { items: Item[]; isAdmin: boolean }) {
   return (
     <div className="flex flex-col gap-3">
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">Заявок на больничный пока нет.</p>
       ) : (
-        items.map((item) => <SickLeaveRow key={item.id} item={item} />)
+        items.map((item) => <SickLeaveRow key={item.id} item={item} isAdmin={isAdmin} />)
       )}
     </div>
   )
 }
 
-function SickLeaveRow({ item }: { item: Item }) {
+function SickLeaveRow({ item, isAdmin }: { item: Item; isAdmin: boolean }) {
   const [state, formAction] = useActionState(reviewSickLeaveAction, undefined)
   const [pending, startTransition] = useTransition()
   const [reviewNote, setReviewNote] = useState('')
@@ -76,11 +78,24 @@ function SickLeaveRow({ item }: { item: Item }) {
 
       <p className="text-sm">{item.reason}</p>
 
+      {/* Medical certificate link */}
+      {item.documentUrl ? (
+        <a
+          href={item.documentUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+        >
+          <FileTextIcon className="size-3.5" />
+          {item.documentTitle || 'Справка'}
+        </a>
+      ) : null}
+
       {item.reviewNote ? (
         <p className="text-xs text-muted-foreground">Комментарий тренера: {item.reviewNote}</p>
       ) : null}
 
-      {item.status === 'pending' ? (
+      {isAdmin && item.status === 'pending' ? (
         <form
           action={formAction}
           onSubmit={() => startTransition(() => {})}

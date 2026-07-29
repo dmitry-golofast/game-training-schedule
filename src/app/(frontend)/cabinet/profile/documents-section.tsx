@@ -1,7 +1,7 @@
 'use client'
 
 import { FileTextIcon, Trash2Icon, UploadIcon } from 'lucide-react'
-import { useActionState, useEffect, useRef, useState } from 'react'
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
 import {
@@ -28,7 +28,7 @@ type DocItem = {
   filename?: string | null
   url?: string | null
   createdAt: string
-  student: Student | null
+  student?: Student | null
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -48,18 +48,21 @@ export function DocumentsSection({
 }) {
   const [uploadState, uploadAction] = useActionState(uploadDocumentAction, undefined)
   const [deleteState, deleteAction] = useActionState(deleteDocumentAction, undefined)
-  const [pending, setPending] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const [selectedStudent, setSelectedStudent] = useState(students[0]?.id ?? '')
   const formRef = useRef<HTMLFormElement>(null)
+  const shownRef = useRef(false)
 
   useEffect(() => {
-    if (uploadState?.success) {
+    if (!uploadState) return
+    if (shownRef.current) return
+    shownRef.current = true
+    if (uploadState.success) {
       toast.success('Документ загружен.')
-      setPending(false)
       formRef.current?.reset()
-    } else if (uploadState && !uploadState.success) {
+    } else if ('error' in uploadState) {
       toast.error(uploadState.error)
-      setPending(false)
+      shownRef.current = false
     }
   }, [uploadState])
 
@@ -74,7 +77,12 @@ export function DocumentsSection({
   return (
     <div className="flex flex-col gap-4">
       {/* Upload form */}
-      <form ref={formRef} action={uploadAction} className="flex flex-col gap-3">
+      <form
+        ref={formRef}
+        action={uploadAction}
+        onSubmit={() => startTransition(() => {})}
+        className="flex flex-col gap-3"
+      >
         {canSelectStudent ? (
           <>
             <input type="hidden" name="student" value={selectedStudent} />
@@ -119,20 +127,13 @@ export function DocumentsSection({
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="doc-file">Файл (PDF, изображение)</Label>
-          <Input
-            id="doc-file"
-            name="file"
-            type="file"
-            accept="application/pdf,image/*"
-            required
-            onChange={() => setPending(false)}
-          />
+          <Input id="doc-file" name="file" type="file" accept="application/pdf,image/*" required />
         </div>
 
         <div>
-          <Button type="submit" disabled={pending} onClick={() => setPending(true)}>
+          <Button type="submit" disabled={isPending}>
             <UploadIcon />
-            {pending ? 'Загрузка…' : 'Загрузить'}
+            {isPending ? 'Загрузка…' : 'Загрузить'}
           </Button>
         </div>
       </form>

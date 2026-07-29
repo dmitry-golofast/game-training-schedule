@@ -81,9 +81,23 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
       sort: 'name',
       limit: 200,
       overrideAccess: true,
-      depth: 0,
+      depth: 1,
     })
-    groups = groupsResult.docs.map((g) => ({ id: g.id, name: g.name }))
+    groups = groupsResult.docs.map((g) => ({
+      id: g.id,
+      name: g.name,
+      members: (g.members ?? [])
+        .map((m) =>
+          typeof m === 'object' && m !== null
+            ? {
+                id: m.id,
+                name: [m.lastName, m.firstName].filter(Boolean).join(' ') || m.name || m.email,
+                email: m.email,
+              }
+            : null,
+        )
+        .filter((m): m is { id: string; name: string; email: string } => m !== null),
+    }))
   }
 
   return (

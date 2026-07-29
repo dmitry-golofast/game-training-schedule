@@ -6,7 +6,11 @@ import { getCurrentUser, getPayloadClient } from '@/lib/payload'
 
 type ActionResult = { success: true } | { success: false; error: string }
 
-/** Student/parent: submit a sick-leave request for a slot. */
+/**
+ * Student/parent: submit a sick-leave request for a slot. Optionally attaches
+ * a medical certificate file (PDF/image) which is stored as a `documents`
+ * upload and linked to the sick-leave.
+ */
 export async function createSickLeaveAction(
   _prev: unknown,
   formData: FormData,
@@ -19,17 +23,51 @@ export async function createSickLeaveAction(
   const student = String(formData.get('student') ?? '').trim()
   const slot = String(formData.get('slot') ?? '').trim()
   const reason = String(formData.get('reason') ?? '').trim()
+  const file = formData.get('file')
 
   if (!student || !slot || !reason) {
     return { success: false, error: 'Ученик, тренировка и причина обязательны.' }
   }
 
   const payload = await getPayloadClient()
+
+  // If a file was attached, create a documents record first.
+  let documentId: string | undefined
+  if (file instanceof File && file.size > 0) {
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const doc = await payload.create({
+        collection: 'documents',
+        overrideAccess: true,
+        data: {
+          student,
+          docType: 'medic',
+          title: 'Справка о пропуске занятий по болезни',
+        },
+        file: {
+          data: Buffer.from(arrayBuffer),
+          mimetype: file.type,
+          name: file.name,
+          size: file.size,
+        },
+      })
+      documentId = doc.id
+    } catch {
+      // File upload failure shouldn't block the sick-leave request.
+    }
+  }
+
   try {
     await payload.create({
       collection: 'sick-leaves',
       overrideAccess: true,
-      data: { student, slot, reason, status: 'pending' },
+      data: {
+        student,
+        slot,
+        reason,
+        status: 'pending',
+        ...(documentId ? { document: documentId } : {}),
+      },
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

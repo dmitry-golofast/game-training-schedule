@@ -51,7 +51,6 @@ export async function uploadDocumentAction(
         docType,
         title,
         notes: notes || undefined,
-        filename: file.name,
       },
       file: {
         data: Buffer.from(arrayBuffer),

@@ -67,6 +67,38 @@ export const Users: CollectionConfig = {
     {
       name: 'name',
       type: 'text',
+      admin: {
+        description: 'Полное имя (генерируется автоматически из ФИО).',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'lastName',
+      type: 'text',
+      admin: { description: 'Фамилия' },
+    },
+    {
+      name: 'firstName',
+      type: 'text',
+      admin: { description: 'Имя' },
+    },
+    {
+      name: 'middleName',
+      type: 'text',
+      admin: { description: 'Отчество (необязательно)' },
+    },
+    {
+      name: 'birthDate',
+      type: 'date',
+      admin: { description: 'Дата рождения' },
+    },
+    {
+      name: 'parentPhone',
+      type: 'text',
+      admin: {
+        description: 'Телефон родителя (обязательно для учащихся до 18 лет).',
+        condition: (data) => data.role === 'user',
+      },
     },
     {
       name: 'role',

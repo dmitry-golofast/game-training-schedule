@@ -1,7 +1,7 @@
 'use client'
 
 import { PlusIcon } from 'lucide-react'
-import { useActionState, useState, useTransition } from 'react'
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
 import { createStudentAction } from '@/app/(frontend)/cabinet/students/actions'
@@ -27,40 +27,115 @@ import {
 
 type Parent = { id: string; name: string; email: string }
 
+/** Compute age from a YYYY-MM-DD string. Returns null if invalid/empty. */
+function ageFromBirth(value: string): number | null {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  const now = new Date()
+  let age = now.getFullYear() - d.getFullYear()
+  const m = now.getMonth() - d.getMonth()
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1
+  return age >= 0 ? age : null
+}
+
 function StudentForm({ parents, onDone }: { parents: Parent[]; onDone: () => void }) {
   const [state, formAction] = useActionState(createStudentAction, undefined)
   const [pending, startTransition] = useTransition()
+  const [birthDate, setBirthDate] = useState('')
+  const [parentId, setParentId] = useState('')
+  const shownRef = useRef(false)
 
-  // When the action returns success, close the dialog + toast.
-  if (state?.success) {
-    if (state.tempPassword) {
-      toast.success(`Ученик создан. Временный пароль: ${state.tempPassword}`, {
-        duration: 12000,
-        description: 'Передайте пароль ученику и попросите сменить его после входа.',
-      })
-    } else {
-      toast.success('Ученик добавлен.')
+  const age = ageFromBirth(birthDate)
+  const isMinor = age !== null && age < 18
+
+  useEffect(() => {
+    if (!state) return
+    // Prevent duplicate toasts: only fire once per state object.
+    if (shownRef.current) return
+    shownRef.current = true
+
+    if (state.success) {
+      if (state.tempPassword) {
+        toast.success(`Ученик создан. Временный пароль: ${state.tempPassword}`, {
+          duration: 12000,
+          description: 'Передайте пароль ученику и попросите сменить его после входа.',
+        })
+      } else {
+        toast.success('Ученик добавлен.')
+      }
+      onDone()
+    } else if (state.error) {
+      toast.error(state.error)
+      // Reset flag so the user sees a toast on the next attempt.
+      shownRef.current = false
     }
-    onDone()
-  }
+  }, [state, onDone])
 
   return (
     <form
       action={formAction}
-      onSubmit={() => {
-        // Wrap in transition so we can show pending state on the button.
-        startTransition(() => {})
-      }}
+      onSubmit={() => startTransition(() => {})}
       className="flex flex-col gap-4"
     >
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="student-name">Имя</Label>
-        <Input id="student-name" name="name" type="text" required />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="student-lastName">
+            Фамилия <span className="text-destructive">*</span>
+          </Label>
+          <Input id="student-lastName" name="lastName" type="text" required />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="student-firstName">
+            Имя <span className="text-destructive">*</span>
+          </Label>
+          <Input id="student-firstName" name="firstName" type="text" required />
+        </div>
       </div>
+
       <div className="flex flex-col gap-2">
-        <Label htmlFor="student-email">Email</Label>
+        <Label htmlFor="student-middleName">Отчество</Label>
+        <Input id="student-middleName" name="middleName" type="text" placeholder="Необязательно" />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="student-birthDate">Дата рождения</Label>
+        <Input
+          id="student-birthDate"
+          name="birthDate"
+          type="date"
+          value={birthDate}
+          onChange={(e) => setBirthDate(e.target.value)}
+        />
+        {age !== null ? (
+          <p className="text-xs text-muted-foreground">
+            Возраст: {age} лет
+            {isMinor ? ' (несовершеннолетний — телефон родителя обязателен)' : ''}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="student-parentPhone">
+          Телефон родителя
+          {isMinor ? <span className="text-destructive"> *</span> : null}
+        </Label>
+        <Input
+          id="student-parentPhone"
+          name="parentPhone"
+          type="tel"
+          placeholder="+7 ..."
+          required={isMinor}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="student-email">
+          Email <span className="text-destructive">*</span>
+        </Label>
         <Input id="student-email" name="email" type="email" autoComplete="off" required />
       </div>
+
       <div className="flex flex-col gap-2">
         <Label htmlFor="student-password">Пароль</Label>
         <Input
@@ -74,18 +149,16 @@ function StudentForm({ parents, onDone }: { parents: Parent[]; onDone: () => voi
           Минимум 8 символов. Если пусто — создадим случайный и покажем его один раз.
         </p>
       </div>
+
       <div className="flex flex-col gap-2">
-        <Label htmlFor="student-parent">Родитель (необязательно)</Label>
-        {/* Hidden input keeps the selected parent id in the form payload. */}
-        <input type="hidden" name="parentId" id="student-parent-value" />
-        <Select
-          onValueChange={(value) => {
-            const el = document.getElementById('student-parent-value')
-            if (el instanceof HTMLInputElement) el.value = value
-          }}
-        >
+        <Label htmlFor="student-parent">
+          Родитель
+          {isMinor ? <span className="text-destructive"> *</span> : null}
+        </Label>
+        <input type="hidden" name="parentId" value={parentId} />
+        <Select value={parentId} onValueChange={setParentId}>
           <SelectTrigger id="student-parent" className="w-full">
-            <SelectValue placeholder="Без родителя" />
+            <SelectValue placeholder={isMinor ? 'Выберите родителя' : 'Без родителя'} />
           </SelectTrigger>
           <SelectContent>
             {parents.map((parent) => (
@@ -95,13 +168,12 @@ function StudentForm({ parents, onDone }: { parents: Parent[]; onDone: () => voi
             ))}
           </SelectContent>
         </Select>
+        {isMinor ? (
+          <p className="text-xs text-muted-foreground">
+            Для учащихся младше 18 лет выбор родителя обязателен.
+          </p>
+        ) : null}
       </div>
-
-      {state?.error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {state.error}
-        </p>
-      ) : null}
 
       <DialogFooter>
         <Button type="submit" disabled={pending}>
@@ -123,7 +195,7 @@ export function StudentsClient({ parents }: { parents: Parent[] }) {
           Добавить ученика
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Новый ученик</DialogTitle>
           <DialogDescription>

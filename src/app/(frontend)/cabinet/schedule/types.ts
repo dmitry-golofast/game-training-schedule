@@ -6,7 +6,7 @@ export type SlotKind = 'individual' | 'group'
 export type Student = { id: string; name: string; email: string }
 
 /** Populated group reference as used by the grid/dialog. */
-export type GroupRef = { id: string; name: string }
+export type GroupRef = { id: string; name: string; members?: Student[] }
 
 export type GridSlot = {
   id: string
