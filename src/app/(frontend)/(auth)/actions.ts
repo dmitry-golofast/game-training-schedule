@@ -43,9 +43,10 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   }
 
   const cookieStore = await cookies()
+  const isHttps = (process.env.NEXT_PUBLIC_SERVER_URL ?? '').startsWith('https')
   cookieStore.set(PAYLOAD_TOKEN_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps,
     path: '/',
     sameSite: 'lax',
     maxAge: TOKEN_MAX_AGE,
