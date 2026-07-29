@@ -19,6 +19,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Payload requires PAYLOAD_SECRET and DATABASE_URI at build time for
+# static page generation. We pass a dummy build-time secret — the real
+# secret comes from .env at runtime.
+ENV PAYLOAD_SECRET=build-time-placeholder-not-used-at-runtime
+ENV DATABASE_URI=mongodb://localhost:27017/build-placeholder
+
 # Build the Next.js standalone output
 RUN pnpm build
 
