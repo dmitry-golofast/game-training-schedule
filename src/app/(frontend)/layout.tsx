@@ -9,11 +9,16 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Game Training Schedule',
-    template: '%s · Game Training Schedule',
+    default: 'Slotory',
+    template: '%s · Slotory',
   },
   description: 'Personal cabinet for game training schedules.',
 }
+
+// All pages under (frontend) use Payload Local API (DB access) and must not
+// be statically prerendered at build time — the DB is not available during
+// the Docker build stage.
+export const dynamic = 'force-dynamic'
 
 export default function FrontendLayout(props: { children: React.ReactNode }) {
   const { children } = props
