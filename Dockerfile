@@ -44,8 +44,6 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 # Copy static assets
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# Copy public assets (if any)
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Create media directory for local uploads (when S3 is not configured)
 RUN mkdir -p /app/media && chown nextjs:nodejs /app/media
