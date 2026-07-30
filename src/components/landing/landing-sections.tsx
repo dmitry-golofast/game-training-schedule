@@ -471,7 +471,13 @@ export function FinalCtaSection({ data }: { data?: Content['finalCta'] }) {
 // ── Nav ──
 export function LandingNav() {
   return (
-    <header className="border-b" style={{ borderColor: 'var(--landing-border)' }}>
+    <header
+      className="sticky top-0 z-50 border-b backdrop-blur-md"
+      style={{
+        borderColor: 'var(--landing-border)',
+        backgroundColor: 'rgba(8, 8, 8, 0.8)',
+      }}
+    >
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
         <Link href="/" className="text-xl font-bold tracking-tight text-white">
           Slotory
