@@ -173,7 +173,11 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
                     ? [slot.student]
                     : []
               return (
-                <div key={slot.id} className="relative">
+                <div
+                  key={slot.id}
+                  className="absolute inset-x-2"
+                  style={{ top: top + 1, height: height - 2 }}
+                >
                   <div
                     role="button"
                     tabIndex={0}
@@ -182,11 +186,10 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
                       if (canEdit && (e.key === 'Enter' || e.key === ' ')) openEdit(slot)
                     }}
                     className={cn(
-                      'absolute inset-x-2 flex flex-col items-start gap-0.5 overflow-hidden rounded-md border border-l-4 border-border px-3 py-1.5 text-left text-xs shadow-sm transition-colors',
+                      'flex h-full w-full flex-col items-start gap-0.5 overflow-hidden rounded-md border border-l-4 border-border px-3 py-1.5 text-left text-xs shadow-sm transition-colors',
                       STATUS_STYLES[slot.status],
                       canEdit && 'cursor-pointer',
                     )}
-                    style={{ top: top + 1, height: height - 2 }}
                   >
                     <span className="flex items-center gap-1 font-semibold">
                       {formatTimeInTz(start, timezone)} –{' '}
@@ -217,14 +220,23 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
                       <span className="opacity-70">{STATUS_LABEL[slot.status]}</span>
                     ) : null}
                   </div>
-                  {/* Attendance journal — rendered OUTSIDE the clickable slot div
-                      so clicks on the dialog/trigger don't bubble to openEdit. */}
+                  {/* Attendance journal — rendered as sibling, positioned absolutely
+                      relative to the outer slot wrapper div. */}
                   {canEdit && slot.status === 'planned' && participants.length > 0 ? (
-                    <AttendanceDialog
-                      slotId={slot.id}
-                      slotLabel={`${formatTimeInTz(start, timezone)} · ${slotTargetLabel(slot)}`}
-                      participants={participants}
-                    />
+                    <div
+                      className="absolute top-1 right-1 z-20"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <AttendanceDialog
+                        slotId={slot.id}
+                        slotLabel={`${formatTimeInTz(start, timezone)} · ${slotTargetLabel(slot)}`}
+                        participants={participants}
+                      />
+                    </div>
                   ) : null}
                 </div>
               )
