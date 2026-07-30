@@ -55,7 +55,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
     limit: 1000,
     overrideAccess: false,
     user: me,
-    depth: 1,
+    depth: 2,
   })
 
   const slots = slotsResult.docs.map(toGridSlot)
