@@ -42,7 +42,23 @@ export function toGridSlot(slot: ScheduleSlot): GridSlot {
       : null
   const groupDoc =
     typeof slot.group === 'object' && slot.group !== null
-      ? { id: slot.group.id, name: slot.group.name }
+      ? {
+          id: slot.group.id,
+          name: slot.group.name,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          members: Array.isArray((slot.group as any).members)
+            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ((slot.group as any).members as any[])
+                .filter((m) => typeof m === 'object' && m !== null)
+                .map((m) => ({
+                  id: String(m.id),
+                  name:
+                    [m.lastName, m.firstName].filter(Boolean).join(' ') ||
+                    String(m.name || m.email || ''),
+                  email: String(m.email || ''),
+                }))
+            : undefined,
+        }
       : null
   return {
     id: slot.id,

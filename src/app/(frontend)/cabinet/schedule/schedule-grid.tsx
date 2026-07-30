@@ -166,9 +166,13 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
               const needsAttendance =
                 canEdit && slot.status === 'planned' && isPastDue && !slot.hasAttendance
               // Build participant list for the attendance dialog.
+              // For group slots, use members from the slot's group (populated by DB)
+              // or fall back to the groups list.
               const participants =
                 slot.kind === 'group' && slot.group
-                  ? (groups.find((g) => g.id === slot.group?.id)?.members ?? [])
+                  ? (slot.group.members ??
+                    groups.find((g) => g.id === slot.group?.id)?.members ??
+                    [])
                   : slot.student
                     ? [slot.student]
                     : []
