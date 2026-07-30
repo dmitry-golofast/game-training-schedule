@@ -1,7 +1,7 @@
 'use client'
 
 import { Trash2Icon } from 'lucide-react'
-import { useActionState, useEffect, useState, useTransition } from 'react'
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
 import { deleteSlotAction, upsertSlotAction } from '@/app/(frontend)/cabinet/schedule/actions'
@@ -129,12 +129,19 @@ function SlotForm({
     },
   )
 
+  const toastShownRef = useRef(false)
+
   useEffect(() => {
-    if (state?.success) {
+    if (!state) return
+    if (toastShownRef.current) return
+    toastShownRef.current = true
+
+    if (state.success) {
       toast.success(data.id ? 'Слот обновлён.' : 'Слот добавлен.')
       onDone()
-    } else if (state && !state.success) {
+    } else if ('error' in state) {
       toast.error(state.error)
+      toastShownRef.current = false
     }
   }, [state, data.id, onDone])
 
