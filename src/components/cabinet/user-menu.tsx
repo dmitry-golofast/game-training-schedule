@@ -2,8 +2,7 @@
 
 import { LogOutIcon, SettingsIcon, UserIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom'
+import { useTransition } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -33,61 +32,65 @@ const ROLE_LABELS: Record<string, string> = {
   admin: 'Администратор',
 }
 
-function PendingLogout() {
-  const { pending } = useFormStatus()
-  return (
-    <DropdownMenuItem variant="destructive" disabled={pending}>
-      <LogOutIcon />
-      {pending ? 'Выходим…' : 'Выйти'}
-    </DropdownMenuItem>
-  )
-}
-
 export function UserMenu({
   user,
 }: {
   user: { email: string; name?: string | null; role?: string | null }
 }) {
-  const [, dispatch] = useActionState(logoutAction, undefined)
+  const [isPending, startTransition] = useTransition()
+
+  const handleLogout = () => {
+    startTransition(async () => {
+      await logoutAction()
+    })
+  }
 
   return (
-    <form action={dispatch}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Avatar>
-              <AvatarImage alt={user.name ?? user.email} />
-              <AvatarFallback>{initials(user.name ?? user.email)}</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel className="flex flex-col gap-0.5">
-            <span className="truncate">{user.name || 'Без имени'}</span>
-            <span className="truncate text-xs font-normal text-muted-foreground">{user.email}</span>
-            {user.role ? (
-              <span className="text-xs font-medium text-foreground">
-                {ROLE_LABELS[user.role] ?? user.role}
-              </span>
-            ) : null}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/cabinet/profile">
-              <UserIcon />
-              Профиль
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/cabinet/settings">
-              <SettingsIcon />
-              Настройки
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <PendingLogout />
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </form>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="rounded-full">
+          <Avatar>
+            <AvatarImage alt={user.name ?? user.email} />
+            <AvatarFallback>{initials(user.name ?? user.email)}</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel className="flex flex-col gap-0.5">
+          <span className="truncate">{user.name || 'Без имени'}</span>
+          <span className="truncate text-xs font-normal text-muted-foreground">{user.email}</span>
+          {user.role ? (
+            <span className="text-xs font-medium text-foreground">
+              {ROLE_LABELS[user.role] ?? user.role}
+            </span>
+          ) : null}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/cabinet/profile">
+            <UserIcon />
+            Профиль
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/cabinet/settings">
+            <SettingsIcon />
+            Настройки
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          disabled={isPending}
+          onClick={(e) => {
+            e.preventDefault()
+            handleLogout()
+          }}
+        >
+          <LogOutIcon />
+          {isPending ? 'Выходим…' : 'Выйти'}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
