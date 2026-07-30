@@ -1,7 +1,7 @@
 'use client'
 
 import { ClipboardCheckIcon } from 'lucide-react'
-import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { saveAttendanceAction } from '@/app/(frontend)/cabinet/schedule/actions'
@@ -36,7 +36,6 @@ export function AttendanceDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [state, formAction] = useActionState(saveAttendanceAction, undefined)
-  const [isPending, startTransition] = useTransition()
   const shownRef = useRef(false)
 
   // Track present state per student in local state.
@@ -80,10 +79,7 @@ export function AttendanceDialog({
           e.stopPropagation()
           setOpen(true)
         }}
-        onPointerDown={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-        }}
+        onPointerDown={(e) => e.stopPropagation()}
         className="flex items-center gap-1 rounded bg-primary/80 px-2 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary"
         title="Вести журнал посещаемости"
       >
@@ -97,11 +93,7 @@ export function AttendanceDialog({
           <DialogDescription>{slotLabel}</DialogDescription>
         </DialogHeader>
 
-        <form
-          action={formAction}
-          onSubmit={() => startTransition(() => {})}
-          className="flex flex-col gap-4"
-        >
+        <form action={formAction} className="flex flex-col gap-4">
           <input type="hidden" name="slotId" value={slotId} />
 
           <div className="flex flex-col gap-2">
@@ -148,8 +140,8 @@ export function AttendanceDialog({
                 Отмена
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={isPending || participants.length === 0}>
-              {isPending ? 'Сохраняем…' : 'Сохранить'}
+            <Button type="submit" disabled={participants.length === 0}>
+              Сохранить
             </Button>
           </DialogFooter>
         </form>
