@@ -26,11 +26,12 @@ docker compose run --rm certbot certonly \
     --agree-tos \
     --no-eff-email \
     -d "$DOMAIN" \
-    -d "www.$DOMAIN"
+    -d "www.$DOMAIN" \
+    -d "app.$DOMAIN"
 
 # Step 2: Replace nginx config with SSL version
 echo ">>> Switching nginx to HTTPS config..."
-cp nginx/slotory.ru.ssl.conf nginx/slotory.ru.conf
+cp nginx/slotory.ru.ssl.conf.disabled nginx/slotory.ru.conf
 
 # Step 3: Restart nginx to pick up certificates + new config
 echo ">>> Restarting nginx..."
