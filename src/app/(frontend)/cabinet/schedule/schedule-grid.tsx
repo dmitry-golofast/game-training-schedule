@@ -173,56 +173,58 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
                     ? [slot.student]
                     : []
               return (
-                <div
-                  key={slot.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => (canEdit ? openEdit(slot) : undefined)}
-                  onKeyDown={(e) => {
-                    if (canEdit && (e.key === 'Enter' || e.key === ' ')) openEdit(slot)
-                  }}
-                  className={cn(
-                    'absolute inset-x-2 flex flex-col items-start gap-0.5 overflow-hidden rounded-md border border-l-4 border-border px-3 py-1.5 text-left text-xs shadow-sm transition-colors',
-                    STATUS_STYLES[slot.status],
-                    canEdit && 'cursor-pointer',
-                  )}
-                  style={{ top: top + 1, height: height - 2 }}
-                >
-                  {/* Attendance journal button for planned slots (admin only) */}
+                <div key={slot.id} className="relative">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => (canEdit ? openEdit(slot) : undefined)}
+                    onKeyDown={(e) => {
+                      if (canEdit && (e.key === 'Enter' || e.key === ' ')) openEdit(slot)
+                    }}
+                    className={cn(
+                      'absolute inset-x-2 flex flex-col items-start gap-0.5 overflow-hidden rounded-md border border-l-4 border-border px-3 py-1.5 text-left text-xs shadow-sm transition-colors',
+                      STATUS_STYLES[slot.status],
+                      canEdit && 'cursor-pointer',
+                    )}
+                    style={{ top: top + 1, height: height - 2 }}
+                  >
+                    <span className="flex items-center gap-1 font-semibold">
+                      {formatTimeInTz(start, timezone)} –{' '}
+                      {formatTimeInTz(
+                        new Date(start.getTime() + slot.durationMin * 60_000),
+                        timezone,
+                      )}
+                      {needsAttendance ? (
+                        <AlertCircleIcon
+                          className="size-3 shrink-0 animate-pulse text-amber-500"
+                          aria-label="Требуется заполнить журнал"
+                        />
+                      ) : null}
+                      {slot.isRecurring || slot.isRecurringChild ? (
+                        <RepeatIcon
+                          className="size-3 opacity-70"
+                          aria-label="Повторяющаяся тренировка"
+                        />
+                      ) : null}
+                    </span>
+                    <span className="truncate">{slotTargetLabel(slot)}</span>
+                    {needsAttendance ? (
+                      <span className="animate-pulse text-[10px] font-medium text-amber-500">
+                        ⚠ Требуется журнал
+                      </span>
+                    ) : null}
+                    {height >= ROW_HEIGHT_PX * 1.5 && !needsAttendance ? (
+                      <span className="opacity-70">{STATUS_LABEL[slot.status]}</span>
+                    ) : null}
+                  </div>
+                  {/* Attendance journal — rendered OUTSIDE the clickable slot div
+                      so clicks on the dialog/trigger don't bubble to openEdit. */}
                   {canEdit && slot.status === 'planned' && participants.length > 0 ? (
                     <AttendanceDialog
                       slotId={slot.id}
                       slotLabel={`${formatTimeInTz(start, timezone)} · ${slotTargetLabel(slot)}`}
                       participants={participants}
                     />
-                  ) : null}
-                  <span className="flex items-center gap-1 font-semibold">
-                    {formatTimeInTz(start, timezone)} –{' '}
-                    {formatTimeInTz(
-                      new Date(start.getTime() + slot.durationMin * 60_000),
-                      timezone,
-                    )}
-                    {needsAttendance ? (
-                      <AlertCircleIcon
-                        className="size-3 shrink-0 animate-pulse text-amber-500"
-                        aria-label="Требуется заполнить журнал"
-                      />
-                    ) : null}
-                    {slot.isRecurring || slot.isRecurringChild ? (
-                      <RepeatIcon
-                        className="size-3 opacity-70"
-                        aria-label="Повторяющаяся тренировка"
-                      />
-                    ) : null}
-                  </span>
-                  <span className="truncate">{slotTargetLabel(slot)}</span>
-                  {needsAttendance ? (
-                    <span className="animate-pulse text-[10px] font-medium text-amber-500">
-                      ⚠ Требуется журнал
-                    </span>
-                  ) : null}
-                  {height >= ROW_HEIGHT_PX * 1.5 && !needsAttendance ? (
-                    <span className="opacity-70">{STATUS_LABEL[slot.status]}</span>
                   ) : null}
                 </div>
               )

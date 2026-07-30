@@ -76,10 +76,12 @@ export function AttendanceDialog({
       <button
         type="button"
         onClick={(e) => {
+          e.preventDefault()
           e.stopPropagation()
           setOpen(true)
         }}
-        className="absolute top-1 right-1 z-10 flex items-center gap-1 rounded bg-primary/80 px-2 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary"
+        onPointerDown={(e) => e.stopPropagation()}
+        className="absolute top-1 right-1 z-20 flex items-center gap-1 rounded bg-primary/80 px-2 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary"
         title="Вести журнал посещаемости"
       >
         <ClipboardCheckIcon className="size-3" />
