@@ -19,6 +19,14 @@ export type GridSlot = {
   group: GroupRef | null
   isRecurring: boolean
   isRecurringChild: boolean
+  recurrence?: {
+    frequency?: string | null
+    interval?: number | null
+    weekdays?: number[] | null
+    until?: string | null
+    count?: number | null
+    timezone?: string | null
+  } | null
 }
 
 /** Shape of a slot passed from the server component to the client views. */
@@ -46,6 +54,7 @@ export function toGridSlot(slot: ScheduleSlot): GridSlot {
     group: groupDoc,
     isRecurring: Boolean(slot.isRecurring),
     isRecurringChild: Boolean(slot.isRecurringChild),
+    recurrence: slot.recurrence ?? null,
   }
 }
 
@@ -115,6 +124,15 @@ export type DayStat = {
   hasDone: boolean
 }
 
+export type RecurrenceData = {
+  isRecurring: boolean
+  frequency: 'daily' | 'weekly'
+  interval: number
+  weekdays: number[]
+  until: string
+  count: string
+}
+
 export type DialogData = {
   id?: string
   startAt: string
@@ -125,6 +143,7 @@ export type DialogData = {
   status: SlotStatus
   notes?: string | null
   isChild?: boolean
+  recurrence?: RecurrenceData
 }
 
 /** Human-readable label for a slot's target (student or group). */

@@ -168,11 +168,6 @@ function StudentForm({ parents, onDone }: { parents: Parent[]; onDone: () => voi
             ))}
           </SelectContent>
         </Select>
-        {isMinor ? (
-          <p className="text-xs text-muted-foreground">
-            Для учащихся младше 18 лет выбор родителя обязателен.
-          </p>
-        ) : null}
       </div>
 
       <DialogFooter>

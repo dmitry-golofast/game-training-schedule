@@ -27,16 +27,23 @@ function wallTimeInTz(instant: Date, tz: string): { hours: number; minutes: numb
   return { hours: p.hours, minutes: p.minutes }
 }
 
+/** Get the day-of-week (0=Sun..6=Sat) for a (year, month, day) tuple. */
+function dayOfWeek(y: number, m: number, d: number): number {
+  // Use Date.UTC so the day-of-week is deterministic regardless of server TZ.
+  return new Date(Date.UTC(y, m, d)).getUTCDay()
+}
+
 /**
  * Expand a recurrence into concrete occurrence start instants.
  *
- *  - `firstStart` is the parent slot's startAt (UTC). Its wall-clock time in
- *    `rule.timezone` anchors the time-of-day for every occurrence.
- *  - `rangeEnd` is an inclusive upper bound used to stop the expansion even
- *    when neither `until` nor `count` is provided (safety cap).
- *  - `maxOccurrences` is a hard cap (default 365) to prevent runaway loops.
- *
- * Returns UTC `Date`s, including the first occurrence, in ascending order.
+ * Key rules:
+ *  - For weekly recurrence with selected weekdays, ONLY those weekdays
+ *    generate occurrences. The firstStart date itself is NOT forced — if
+ *    it falls on a non-selected weekday, it won't produce an occurrence
+ *    on that date.
+ *  - If weekdays is empty/null, every day matching the interval is valid.
+ *  - The weekDistance is computed from the firstStart's wall-clock day
+ *    to the candidate's wall-clock day, both in the same timezone.
  */
 export function expandRecurrence(
   firstStart: Date,
@@ -57,14 +64,25 @@ export function expandRecurrence(
 
   // Start iterating from the calendar day of `firstStart` in `tz`.
   const firstParts = formatTzParts(firstStart, tz)
+  // The reference start day for week-distance calculations.
+  const refDayMs = Date.UTC(firstParts.year, firstParts.month, firstParts.day)
+
+  // For weekly with weekdays: find the start of the week containing firstStart
+  // (Monday-based) so interval cycles align properly.
+  const firstWeekday = dayOfWeek(firstParts.year, firstParts.month, firstParts.day)
+  const weekStartOffset = firstWeekday === 0 ? 6 : firstWeekday - 1 // Mon=0..Sun=6
+  const weekStartMs = refDayMs - weekStartOffset * 86_400_000
+
   const cursor = new Date(Date.UTC(firstParts.year, firstParts.month, firstParts.day))
 
   let produced = 0
-  // Safety: never iterate more than `maxOccurrences` candidate days.
   for (let i = 0; i < maxOccurrences * 7 && produced < cap; i += 1) {
     const y = cursor.getUTCFullYear()
     const m = cursor.getUTCMonth()
     const d = cursor.getUTCDate()
+
+    // The calendar day of the cursor (in UTC terms, matching TZ components).
+    const cursorDayMs = Date.UTC(y, m, d)
 
     // Convert this candidate wall-clock day (at the anchor time) to a UTC instant.
     const instant = wallClockToUtc(y, m, d, hours, minutes, tz)
@@ -85,23 +103,28 @@ export function expandRecurrence(
     // Enforce `rangeEnd`.
     if (instant.getTime() > rangeEnd.getTime()) break
 
-    // For weekly frequency, restrict to selected weekdays (0=Sun..6=Sat)
-    // and respect the interval in WEEKS.
     if (rule.frequency === 'weekly') {
-      // `cursor` already represents a wall-clock day in `tz`; its UTC day-of-week
-      // matches the wall-clock day-of-week by construction (y/m/d are TZ parts).
-      const weekday = new Date(y, m, d).getUTCDay()
-      const allowed =
-        !rule.weekdays || rule.weekdays.length === 0 || rule.weekdays.includes(weekday)
-      const weekDiff = weekDistance(firstStart, instant, tz)
-      const inInterval = weekDiff % (rule.interval || 1) === 0
-      if (allowed && inInterval) {
+      const weekday = dayOfWeek(y, m, d)
+      const hasWeekdays = rule.weekdays && rule.weekdays.length > 0
+      const allowed = !hasWeekdays || rule.weekdays!.includes(weekday)
+
+      if (!allowed) {
+        cursor.setUTCDate(cursor.getUTCDate() + 1)
+        continue
+      }
+
+      // Check interval: which week cycle are we in?
+      const dayDiffFromWeekStart = Math.round((cursorDayMs - weekStartMs) / 86_400_000)
+      const weekIndex = Math.floor(dayDiffFromWeekStart / 7)
+      const inInterval = weekIndex % (rule.interval || 1) === 0
+
+      if (inInterval) {
         out.push(instant)
         produced += 1
       }
     } else {
       // daily: every `interval` days.
-      const dayDiff = Math.round((instant.getTime() - firstStart.getTime()) / 86_400_000)
+      const dayDiff = Math.round((cursorDayMs - refDayMs) / 86_400_000)
       if (dayDiff >= 0 && dayDiff % (rule.interval || 1) === 0) {
         out.push(instant)
         produced += 1
@@ -112,13 +135,4 @@ export function expandRecurrence(
   }
 
   return out
-}
-
-/** Whole-week distance between two instants, as seen in `tz`. */
-function weekDistance(a: Date, b: Date, tz: string): number {
-  const pa = formatTzParts(a, tz)
-  const pb = formatTzParts(b, tz)
-  const da = Date.UTC(pa.year, pa.month, pa.day)
-  const db = Date.UTC(pb.year, pb.month, pb.day)
-  return Math.round((db - da) / (7 * 86_400_000))
 }

@@ -127,6 +127,16 @@ export function MonthView({
         status: slot.status,
         notes: slot.notes,
         isChild: slot.isRecurringChild,
+        recurrence: slot.recurrence
+          ? {
+              isRecurring: slot.isRecurring,
+              frequency: (slot.recurrence.frequency as 'daily' | 'weekly') ?? 'weekly',
+              interval: slot.recurrence.interval ?? 1,
+              weekdays: slot.recurrence.weekdays ?? [],
+              until: slot.recurrence.until ?? '',
+              count: slot.recurrence.count != null ? String(slot.recurrence.count) : '',
+            }
+          : undefined,
       },
     })
   }

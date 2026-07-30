@@ -112,7 +112,7 @@ export function CabinetShell({ user, children }: { user: User; children: React.R
 
           {/* Logo */}
           <Link href="/cabinet" className="font-semibold tracking-tight">
-            Slotory
+            Taskona
           </Link>
 
           {/* Desktop nav */}

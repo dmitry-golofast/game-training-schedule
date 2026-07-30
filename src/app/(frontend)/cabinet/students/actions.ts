@@ -107,14 +107,6 @@ export async function createStudentAction(
     return { success: false, error: parsed.error }
   }
 
-  // For minors (< 18), a parent must be selected.
-  if (parsed.isMinor && !rawParentId) {
-    return {
-      success: false,
-      error: 'Для учащихся младше 18 лет необходимо выбрать родителя.',
-    }
-  }
-
   const password = providedPassword || generateTempPassword()
   if (password.length < 8) {
     return { success: false, error: 'Пароль должен быть не короче 8 символов.' }

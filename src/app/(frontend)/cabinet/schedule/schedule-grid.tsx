@@ -95,6 +95,16 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
         status: slot.status,
         notes: slot.notes,
         isChild: slot.isRecurringChild,
+        recurrence: slot.recurrence
+          ? {
+              isRecurring: slot.isRecurring,
+              frequency: (slot.recurrence.frequency as 'daily' | 'weekly') ?? 'weekly',
+              interval: slot.recurrence.interval ?? 1,
+              weekdays: slot.recurrence.weekdays ?? [],
+              until: slot.recurrence.until ?? '',
+              count: slot.recurrence.count != null ? String(slot.recurrence.count) : '',
+            }
+          : undefined,
       },
     })
   }
