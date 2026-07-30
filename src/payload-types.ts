@@ -77,6 +77,8 @@ export interface Config {
     documents: Document;
     payments: Payment;
     'sick-leaves': SickLeaf;
+    'landing-blocks': LandingBlock;
+    'landing-pages': LandingPage;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -94,6 +96,8 @@ export interface Config {
     documents: DocumentsSelect<false> | DocumentsSelect<true>;
     payments: PaymentsSelect<false> | PaymentsSelect<true>;
     'sick-leaves': SickLeavesSelect<false> | SickLeavesSelect<true>;
+    'landing-blocks': LandingBlocksSelect<false> | LandingBlocksSelect<true>;
+    'landing-pages': LandingPagesSelect<false> | LandingPagesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -474,6 +478,143 @@ export interface SickLeaf {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "landing-blocks".
+ */
+export interface LandingBlock {
+  id: string;
+  /**
+   * Internal label for this block (not shown on site).
+   */
+  title: string;
+  blockType:
+    | 'hero'
+    | 'audience'
+    | 'problems'
+    | 'features'
+    | 'gamification'
+    | 'parentControl'
+    | 'trainerDashboard'
+    | 'aiAssistant'
+    | 'extraFeatures'
+    | 'howItWorks'
+    | 'advantages'
+    | 'testimonials'
+    | 'pricing'
+    | 'faq'
+    | 'finalCta';
+  heading?: string | null;
+  subheading?: string | null;
+  ctaText?: string | null;
+  ctaTextSecondary?: string | null;
+  /**
+   * Background image for Hero (full viewport).
+   */
+  backgroundImage?: (string | null) | Media;
+  items?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  cards?:
+    | {
+        icon?: string | null;
+        title: string;
+        subtitle?: string | null;
+        items?:
+          | {
+              item: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  stats?:
+    | {
+        value: string;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  steps?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  dashboardCards?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  testimonials?:
+    | {
+        text: string;
+        rating?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  pricing?:
+    | {
+        name: string;
+        price: string;
+        features?:
+          | {
+              item: string;
+              id?: string | null;
+            }[]
+          | null;
+        popular?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  faq?:
+    | {
+        question: string;
+        answer: string;
+        id?: string | null;
+      }[]
+    | null;
+  advantages?:
+    | {
+        icon?: string | null;
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "landing-pages".
+ */
+export interface LandingPage {
+  id: string;
+  /**
+   * Internal name for this page.
+   */
+  title: string;
+  /**
+   * Mark this page as active — it will be shown at /. Only one page should be active.
+   */
+  isActive?: boolean | null;
+  /**
+   * Add blocks in the order they should appear on the page.
+   */
+  blocks?:
+    | {
+        block: string | LandingBlock;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -535,6 +676,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'sick-leaves';
         value: string | SickLeaf;
+      } | null)
+    | ({
+        relationTo: 'landing-blocks';
+        value: string | LandingBlock;
+      } | null)
+    | ({
+        relationTo: 'landing-pages';
+        value: string | LandingPage;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -773,6 +922,111 @@ export interface SickLeavesSelect<T extends boolean = true> {
   status?: T;
   reviewedAt?: T;
   reviewNote?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "landing-blocks_select".
+ */
+export interface LandingBlocksSelect<T extends boolean = true> {
+  title?: T;
+  blockType?: T;
+  heading?: T;
+  subheading?: T;
+  ctaText?: T;
+  ctaTextSecondary?: T;
+  backgroundImage?: T;
+  items?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  cards?:
+    | T
+    | {
+        icon?: T;
+        title?: T;
+        subtitle?: T;
+        items?:
+          | T
+          | {
+              item?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  stats?:
+    | T
+    | {
+        value?: T;
+        label?: T;
+        id?: T;
+      };
+  steps?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  dashboardCards?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  testimonials?:
+    | T
+    | {
+        text?: T;
+        rating?: T;
+        id?: T;
+      };
+  pricing?:
+    | T
+    | {
+        name?: T;
+        price?: T;
+        features?:
+          | T
+          | {
+              item?: T;
+              id?: T;
+            };
+        popular?: T;
+        id?: T;
+      };
+  faq?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  advantages?:
+    | T
+    | {
+        icon?: T;
+        text?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "landing-pages_select".
+ */
+export interface LandingPagesSelect<T extends boolean = true> {
+  title?: T;
+  isActive?: T;
+  blocks?:
+    | T
+    | {
+        block?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

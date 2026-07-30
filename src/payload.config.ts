@@ -10,6 +10,8 @@ import sharp from 'sharp'
 import { CreditTransactions } from './collections/CreditTransactions'
 import { Documents } from './collections/Documents'
 import { Groups } from './collections/Groups'
+import { LandingBlocks } from './collections/LandingBlocks'
+import { LandingPages } from './collections/LandingPages'
 import { Media } from './collections/Media'
 import { Payments } from './collections/Payments'
 import { ScheduleSlots } from './collections/ScheduleSlots'
@@ -49,6 +51,8 @@ export default buildConfig({
     Documents,
     Payments,
     SickLeaves,
+    LandingBlocks,
+    LandingPages,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

@@ -1,0 +1,48 @@
+/* Landing page dark theme — overrides the system theme with a fixed dark palette */
+.landing-page {
+  --landing-bg: #080808;
+  --landing-card: #111111;
+  --landing-card-hover: #1a1a1a;
+  --landing-accent: #e53935;
+  --landing-hover: #ff4d4d;
+  --landing-text: #ffffff;
+  --landing-muted: #b3b3b3;
+  --landing-border: #222222;
+
+  background-color: var(--landing-bg);
+  color: var(--landing-text);
+}
+
+.landing-page * {
+  border-color: var(--landing-border);
+}
+
+.landing-page .landing-card {
+  background-color: var(--landing-card);
+  border: 1px solid var(--landing-border);
+  border-radius: 12px;
+}
+
+.landing-page .landing-card:hover {
+  background-color: var(--landing-card-hover);
+}
+
+.landing-page .text-muted-landing {
+  color: var(--landing-muted);
+}
+
+.landing-page .text-accent-landing {
+  color: var(--landing-accent);
+}
+
+.landing-page .bg-accent-landing {
+  background-color: var(--landing-accent);
+}
+
+.landing-page .bg-accent-landing:hover {
+  background-color: var(--landing-hover);
+}
+
+.landing-page .border-accent-landing {
+  border-color: var(--landing-accent);
+}
