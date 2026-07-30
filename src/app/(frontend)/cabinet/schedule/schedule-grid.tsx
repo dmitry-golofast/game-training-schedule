@@ -101,7 +101,7 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
               frequency: (slot.recurrence.frequency as 'daily' | 'weekly') ?? 'weekly',
               interval: slot.recurrence.interval ?? 1,
               weekdays: slot.recurrence.weekdays ?? [],
-              until: slot.recurrence.until ?? '',
+              until: slot.recurrence.until ? String(slot.recurrence.until).slice(0, 10) : '',
               count: slot.recurrence.count != null ? String(slot.recurrence.count) : '',
             }
           : undefined,
