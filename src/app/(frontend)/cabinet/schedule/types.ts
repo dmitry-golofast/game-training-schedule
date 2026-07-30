@@ -19,6 +19,7 @@ export type GridSlot = {
   group: GroupRef | null
   isRecurring: boolean
   isRecurringChild: boolean
+  hasAttendance: boolean
   recurrence?: {
     frequency?: string | null
     interval?: number | null
@@ -54,6 +55,7 @@ export function toGridSlot(slot: ScheduleSlot): GridSlot {
     group: groupDoc,
     isRecurring: Boolean(slot.isRecurring),
     isRecurringChild: Boolean(slot.isRecurringChild),
+    hasAttendance: Array.isArray(slot.attendance) && slot.attendance.length > 0,
     recurrence: slot.recurrence ?? null,
   }
 }

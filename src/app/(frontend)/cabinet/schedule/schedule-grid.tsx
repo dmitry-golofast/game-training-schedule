@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarPlusIcon, RepeatIcon } from 'lucide-react'
+import { AlertCircleIcon, CalendarPlusIcon, RepeatIcon } from 'lucide-react'
 import { AttendanceDialog } from '@/app/(frontend)/cabinet/schedule/attendance-dialog'
 import { useMemo, useState } from 'react'
 
@@ -161,6 +161,10 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
               const rows = slot.durationMin / SLOT_STEP_MIN
               const top = rowIndex * ROW_HEIGHT_PX
               const height = rows * ROW_HEIGHT_PX
+              // Check if this past slot needs attendance.
+              const isPastDue = start.getTime() < Date.now()
+              const needsAttendance =
+                canEdit && slot.status === 'planned' && isPastDue && !slot.hasAttendance
               // Build participant list for the attendance dialog.
               const participants =
                 slot.kind === 'group' && slot.group
@@ -198,6 +202,12 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
                       new Date(start.getTime() + slot.durationMin * 60_000),
                       timezone,
                     )}
+                    {needsAttendance ? (
+                      <AlertCircleIcon
+                        className="size-3 shrink-0 animate-pulse text-amber-500"
+                        aria-label="Требуется заполнить журнал"
+                      />
+                    ) : null}
                     {slot.isRecurring || slot.isRecurringChild ? (
                       <RepeatIcon
                         className="size-3 opacity-70"
@@ -206,7 +216,12 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
                     ) : null}
                   </span>
                   <span className="truncate">{slotTargetLabel(slot)}</span>
-                  {height >= ROW_HEIGHT_PX * 1.5 ? (
+                  {needsAttendance ? (
+                    <span className="animate-pulse text-[10px] font-medium text-amber-500">
+                      ⚠ Требуется журнал
+                    </span>
+                  ) : null}
+                  {height >= ROW_HEIGHT_PX * 1.5 && !needsAttendance ? (
                     <span className="opacity-70">{STATUS_LABEL[slot.status]}</span>
                   ) : null}
                 </div>
