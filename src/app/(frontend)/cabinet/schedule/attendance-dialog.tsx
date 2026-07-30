@@ -1,7 +1,7 @@
 'use client'
 
 import { ClipboardCheckIcon } from 'lucide-react'
-import { useActionState, useEffect, useRef, useState } from 'react'
+import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
 import { saveAttendanceAction } from '@/app/(frontend)/cabinet/schedule/actions'
@@ -19,12 +19,6 @@ import {
 
 type Participant = { id: string; name: string }
 
-/**
- * Attendance journal dialog. Shows all participants of a slot (individual →
- * one student; group → all members) with a "present" checkbox each. On save,
- * marks the slot as `done` and triggers per-student write-off for those
- * present only.
- */
 export function AttendanceDialog({
   slotId,
   slotLabel,
@@ -35,28 +29,12 @@ export function AttendanceDialog({
   participants: Participant[]
 }) {
   const [open, setOpen] = useState(false)
-  const [state, formAction] = useActionState(saveAttendanceAction, undefined)
-  const shownRef = useRef(false)
-
-  // Track present state per student in local state.
+  const [isPending, startTransition] = useTransition()
   const [presentMap, setPresentMap] = useState<Record<string, boolean>>(() => {
     const m: Record<string, boolean> = {}
     for (const p of participants) m[p.id] = true
     return m
   })
-
-  useEffect(() => {
-    if (!state) return
-    if (shownRef.current) return
-    shownRef.current = true
-    if (state.success) {
-      toast.success('Журнал сохранён.')
-      setOpen(false)
-    } else if ('error' in state) {
-      toast.error(state.error)
-      shownRef.current = false
-    }
-  }, [state])
 
   const toggle = (id: string) => {
     setPresentMap((prev) => ({ ...prev, [id]: !prev[id] }))
@@ -64,14 +42,37 @@ export function AttendanceDialog({
 
   const presentCount = Object.values(presentMap).filter(Boolean).length
 
+  const handleSubmit = () => {
+    // Build the attendance data directly and call the action.
+    const attendance = participants.map((p) => ({
+      student: p.id,
+      present: presentMap[p.id] ?? true,
+    }))
+
+    if (attendance.length === 0) {
+      toast.error('Нет учеников для отметки.')
+      return
+    }
+
+    const formData = new FormData()
+    formData.set('slotId', slotId)
+    for (const a of attendance) {
+      formData.set(`student_${a.student}`, a.present ? 'true' : 'false')
+    }
+
+    startTransition(async () => {
+      const result = await saveAttendanceAction(undefined, formData)
+      if (result?.success) {
+        toast.success('Журнал сохранён.')
+        setOpen(false)
+      } else if (result && !result.success) {
+        toast.error(result.error)
+      }
+    })
+  }
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v)
-        if (!v) shownRef.current = false
-      }}
-    >
+    <Dialog open={open} onOpenChange={(v) => setOpen(v)}>
       <button
         type="button"
         onClick={(e) => {
@@ -93,58 +94,50 @@ export function AttendanceDialog({
           <DialogDescription>{slotLabel}</DialogDescription>
         </DialogHeader>
 
-        <form action={formAction} className="flex flex-col gap-4">
-          <input type="hidden" name="slotId" value={slotId} />
-
-          <div className="flex flex-col gap-2">
-            {participants.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Нет учеников в тренировке.</p>
-            ) : (
-              participants.map((p) => (
-                <label
-                  key={p.id}
-                  className="flex items-center gap-3 rounded-md border p-3 hover:bg-accent"
+        <div className="flex flex-col gap-2">
+          {participants.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет учеников в тренировке.</p>
+          ) : (
+            participants.map((p) => (
+              <label
+                key={p.id}
+                className="flex items-center gap-3 rounded-md border p-3 hover:bg-accent"
+              >
+                <Checkbox checked={presentMap[p.id] ?? true} onCheckedChange={() => toggle(p.id)} />
+                <span className="flex-1 text-sm font-medium">{p.name}</span>
+                <span
+                  className={
+                    presentMap[p.id]
+                      ? 'text-xs font-medium text-primary'
+                      : 'text-xs text-muted-foreground'
+                  }
                 >
-                  <Checkbox
-                    checked={presentMap[p.id] ?? true}
-                    onCheckedChange={() => toggle(p.id)}
-                  />
-                  <span className="flex-1 text-sm font-medium">{p.name}</span>
-                  <input
-                    type="hidden"
-                    name={`student_${p.id}`}
-                    value={presentMap[p.id] ? 'true' : 'false'}
-                  />
-                  <span
-                    className={
-                      presentMap[p.id]
-                        ? 'text-xs font-medium text-primary'
-                        : 'text-xs text-muted-foreground'
-                    }
-                  >
-                    {presentMap[p.id] ? 'Присутствовал' : 'Отсутствовал'}
-                  </span>
-                </label>
-              ))
-            )}
-          </div>
+                  {presentMap[p.id] ? 'Присутствовал' : 'Отсутствовал'}
+                </span>
+              </label>
+            ))
+          )}
+        </div>
 
-          <p className="text-xs text-muted-foreground">
-            Присутствуют: {presentCount} из {participants.length}. Занятие списывается только у
-            присутствующих.
-          </p>
+        <p className="text-xs text-muted-foreground">
+          Присутствуют: {presentCount} из {participants.length}. Занятие списывается только у
+          присутствующих.
+        </p>
 
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Отмена
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={participants.length === 0}>
-              Сохранить
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              Отмена
             </Button>
-          </DialogFooter>
-        </form>
+          </DialogClose>
+          <Button
+            type="button"
+            disabled={isPending || participants.length === 0}
+            onClick={handleSubmit}
+          >
+            {isPending ? 'Сохраняем…' : 'Сохранить'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
