@@ -152,6 +152,14 @@ export async function registerAction(_prev: unknown, formData: FormData) {
  */
 export async function logoutAction() {
   const cookieStore = await cookies()
-  cookieStore.delete(PAYLOAD_TOKEN_COOKIE)
+  // Delete with explicit options to match how the cookie was set.
+  cookieStore.set(PAYLOAD_TOKEN_COOKIE, '', {
+    httpOnly: true,
+    secure: (process.env.NEXT_PUBLIC_SERVER_URL ?? '').startsWith('https'),
+    path: '/',
+    sameSite: 'lax',
+    maxAge: 0,
+    expires: new Date(0),
+  })
   redirect('/')
 }
