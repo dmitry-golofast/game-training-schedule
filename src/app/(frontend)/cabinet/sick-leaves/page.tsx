@@ -4,6 +4,7 @@ import { SickLeavesClient } from '@/app/(frontend)/cabinet/sick-leaves/sick-leav
 import { SubmitSickLeaveDialog } from '@/app/(frontend)/cabinet/sick-leaves/submit-sick-leave-dialog'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
 import { formatInTz } from '@/lib/timezone'
+import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Больничные' }
 
@@ -34,7 +35,7 @@ export default async function SickLeavesPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let upcomingSlots: any[] = []
 
-  if (me.role === 'admin') {
+  if (isAdminLike(me.role)) {
     whereClause = {} // all
   } else if (me.role === 'user') {
     whereClause = { student: { equals: me.id } }
@@ -96,7 +97,7 @@ export default async function SickLeavesPage() {
   })
 
   // For user/parent: load upcoming slots for the submit dialog.
-  if (me.role !== 'admin' && viewableChildren.length > 0) {
+  if (!isAdminLike(me.role) && viewableChildren.length > 0) {
     const childIds = viewableChildren.map((c) => c.id)
     const nowIso = new Date().toISOString()
     try {
@@ -143,11 +144,11 @@ export default async function SickLeavesPage() {
               : ''}
           </p>
         </div>
-        {me.role !== 'admin' ? (
+        {!isAdminLike(me.role) ? (
           <SubmitSickLeaveDialog children={viewableChildren} slots={upcomingSlots} />
         ) : null}
       </div>
-      <SickLeavesClient items={items} isAdmin={me.role === 'admin'} />
+      <SickLeavesClient items={items} canManage={isAdminLike(me.role)} />
     </div>
   )
 }

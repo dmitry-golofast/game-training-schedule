@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { studentOwnerScopedOrAdmin } from '@/payload/access/student-owner-scoped'
+import { isAdminLike } from '@/lib/roles'
 
 /**
  * A training package (абонемент): a bundle of pre-paid sessions for a student.
@@ -19,9 +20,9 @@ export const Subscriptions: CollectionConfig = {
   },
   access: {
     read: studentOwnerScopedOrAdmin,
-    create: ({ req: { user } }) => user?.role === 'admin',
-    update: ({ req: { user } }) => user?.role === 'admin',
-    delete: ({ req: { user } }) => user?.role === 'admin',
+    create: ({ req: { user } }) => isAdminLike(user?.role),
+    update: ({ req: { user } }) => isAdminLike(user?.role),
+    delete: ({ req: { user } }) => isAdminLike(user?.role),
   },
   hooks: {
     beforeChange: [

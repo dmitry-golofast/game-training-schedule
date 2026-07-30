@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isAdminLike } from '@/lib/roles'
 
 /**
  * A training group — a named set of students that the trainer can address as
@@ -15,10 +16,10 @@ export const Groups: CollectionConfig = {
     defaultColumns: ['name', 'members', 'updatedAt'],
   },
   access: {
-    read: ({ req: { user } }) => user?.role === 'admin',
-    create: ({ req: { user } }) => user?.role === 'admin',
-    update: ({ req: { user } }) => user?.role === 'admin',
-    delete: ({ req: { user } }) => user?.role === 'admin',
+    read: ({ req: { user } }) => isAdminLike(user?.role),
+    create: ({ req: { user } }) => isAdminLike(user?.role),
+    update: ({ req: { user } }) => isAdminLike(user?.role),
+    delete: ({ req: { user } }) => isAdminLike(user?.role),
   },
   fields: [
     {

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { isAdminLike } from '@/lib/roles'
 
 /**
  * Generate a random temporary password for a new student.
@@ -87,7 +88,7 @@ export async function createStudentAction(
   formData: FormData,
 ): Promise<{ success: boolean; tempPassword?: string; error?: string }> {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     return { success: false, error: 'Недостаточно прав.' }
   }
 
@@ -171,7 +172,7 @@ export async function updateStudentAction(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     return { success: false, error: 'Недостаточно прав.' }
   }
 

@@ -1,4 +1,5 @@
 import type { Access, Where } from 'payload'
+import { isAdminLike } from '@/lib/roles'
 
 /**
  * Read access for owned collections, generalized to the three roles:
@@ -20,7 +21,7 @@ import type { Access, Where } from 'payload'
  */
 export const accessibleOrAdmin: Access = ({ req: { user } }) => {
   if (!user) return false
-  if (user.role === 'admin') return true
+  if (isAdminLike(user.role)) return true
 
   // user / parent both see their own records…
   const clauses: Where[] = [{ owner: { equals: user.id } }]
@@ -44,7 +45,7 @@ export const accessibleOrAdmin: Access = ({ req: { user } }) => {
  */
 export const ownerOrAdmin: Access = ({ req: { user } }) => {
   if (!user) return false
-  if (user.role === 'admin') return true
+  if (isAdminLike(user.role)) return true
   // Document-level ownership is enforced via the matching `read` filter;
   // here we only gate on "is there a logged-in user".
   return true

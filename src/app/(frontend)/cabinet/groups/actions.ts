@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { isAdminLike } from '@/lib/roles'
 
 type ActionResult = { success: true } | { success: false; error: string }
 
@@ -20,7 +21,7 @@ function readMembers(formData: FormData): string[] {
  */
 export async function upsertGroupAction(_prev: unknown, formData: FormData): Promise<ActionResult> {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     return { success: false, error: 'Недостаточно прав.' }
   }
 
@@ -70,7 +71,7 @@ export async function upsertGroupAction(_prev: unknown, formData: FormData): Pro
 /** Admin-only: delete a group by id. */
 export async function deleteGroupAction(_prev: unknown, formData: FormData): Promise<ActionResult> {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     return { success: false, error: 'Недостаточно прав.' }
   }
 

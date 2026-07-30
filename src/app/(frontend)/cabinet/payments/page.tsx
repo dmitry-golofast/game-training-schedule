@@ -2,12 +2,13 @@ import { notFound } from 'next/navigation'
 
 import { PaymentsClient } from '@/app/(frontend)/cabinet/payments/payments-client'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Оплаты' }
 
 export default async function PaymentsPage() {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') notFound()
+  if (!me || !isAdminLike(me.role)) notFound()
 
   const payload = await getPayloadClient()
 

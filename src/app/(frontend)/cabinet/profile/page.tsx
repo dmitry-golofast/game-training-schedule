@@ -6,6 +6,7 @@ import { PaymentHistory } from '@/app/(frontend)/cabinet/profile/payment-history
 import { ChildrenSection } from '@/app/(frontend)/cabinet/profile/children-section'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
 import { timezoneLabel } from '@/lib/timezone'
+import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Профиль' }
 
@@ -47,7 +48,7 @@ export default async function ProfilePage() {
       email: c.email,
       birthDate: c.birthDate ?? null,
     }))
-  } else if (me.role === 'admin') {
+  } else if (isAdminLike(me.role)) {
     // Admin can upload for any student.
     const all = await payload.find({
       collection: 'users',
@@ -157,10 +158,12 @@ export default async function ProfilePage() {
             label="Роль"
             value={
               me.role === 'admin'
-                ? 'Тренер (администратор)'
-                : me.role === 'parent'
-                  ? 'Родитель'
-                  : 'Ученик'
+                ? 'Администратор'
+                : me.role === 'trainer'
+                  ? 'Тренер'
+                  : me.role === 'parent'
+                    ? 'Родитель'
+                    : 'Ученик'
             }
           />
           <Separator />

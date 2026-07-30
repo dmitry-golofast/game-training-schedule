@@ -2,12 +2,13 @@ import { notFound } from 'next/navigation'
 
 import { SubscriptionsClient } from '@/app/(frontend)/cabinet/subscriptions/subscriptions-client'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Абонементы' }
 
 export default async function SubscriptionsPage() {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') notFound()
+  if (!me || !isAdminLike(me.role)) notFound()
 
   const payload = await getPayloadClient()
 

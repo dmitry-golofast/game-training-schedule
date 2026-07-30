@@ -1,6 +1,7 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 
 import { studentOwnerScopedOrAdmin } from '@/payload/access/student-owner-scoped'
+import { isAdminLike } from '@/lib/roles'
 
 /**
  * Typed document uploads attached to a student's profile: medical
@@ -21,8 +22,8 @@ export const Documents: CollectionConfig = {
   access: {
     read: studentOwnerScopedOrAdmin,
     create: ({ req: { user } }) => Boolean(user),
-    update: ({ req: { user } }) => user?.role === 'admin',
-    delete: ({ req: { user } }) => user?.role === 'admin',
+    update: ({ req: { user } }) => isAdminLike(user?.role),
+    delete: ({ req: { user } }) => isAdminLike(user?.role),
   },
   hooks: {
     beforeChange: [

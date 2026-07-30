@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { isAdminLike } from '@/lib/roles'
 
 type ActionResult = { success: true } | { success: false; error: string }
 
@@ -19,7 +20,7 @@ export async function createSubscriptionWithPaymentAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     return { success: false, error: 'Недостаточно прав.' }
   }
 
@@ -123,7 +124,7 @@ export async function updateSubscriptionAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     return { success: false, error: 'Недостаточно прав.' }
   }
 
@@ -162,7 +163,7 @@ export async function deleteSubscriptionAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     return { success: false, error: 'Недостаточно прав.' }
   }
 

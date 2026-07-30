@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/
 import { type ScheduleView as ViewMode, parseISODateComponents } from '@/lib/datetime'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
 import { getViewBoundsInTz, getUserTimezone, wallClockToUtc } from '@/lib/timezone'
+import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Расписание' }
 
@@ -62,7 +63,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
   // Students list is only needed for the admin create/edit dialog.
   let students: Student[] = []
   let groups: GroupRef[] = []
-  if (me.role === 'admin') {
+  if (isAdminLike(me.role)) {
     const studentsResult = await payload.find({
       collection: 'users',
       where: { role: { equals: 'user' } },
@@ -106,7 +107,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
         <h1 className="text-2xl font-semibold tracking-tight">Расписание</h1>
       </div>
 
-      {me.role !== 'admin' ? (
+      {!isAdminLike(me.role) ? (
         <Card>
           <CardHeader>
             <CardDescription>
@@ -125,7 +126,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
             slots={slots}
             students={students}
             groups={groups}
-            canEdit={me.role === 'admin'}
+            canEdit={isAdminLike(me.role)}
           />
         </CardContent>
       </Card>

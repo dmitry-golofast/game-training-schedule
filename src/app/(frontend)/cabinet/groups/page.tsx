@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { GroupsClient } from '@/app/(frontend)/cabinet/groups/groups-client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Группы' }
 
@@ -16,7 +17,7 @@ type GroupItem = {
 
 export default async function GroupsPage() {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') notFound()
+  if (!me || !isAdminLike(me.role)) notFound()
 
   const payload = await getPayloadClient()
 

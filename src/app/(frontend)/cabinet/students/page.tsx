@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { StudentsClient } from '@/app/(frontend)/cabinet/students/students-client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getPayloadClient, getCurrentUser } from '@/lib/payload'
+import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Ученики' }
 
@@ -11,7 +12,7 @@ export default async function StudentsPage() {
   const me = await getCurrentUser()
 
   // Only trainers manage students.
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     notFound()
   }
 

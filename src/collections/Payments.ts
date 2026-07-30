@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { studentOwnerScopedOrAdmin } from '@/payload/access/student-owner-scoped'
+import { isAdminLike } from '@/lib/roles'
 
 /**
  * A payment record: the trainer manually records a cash/card/transfer payment
@@ -17,9 +18,9 @@ export const Payments: CollectionConfig = {
   },
   access: {
     read: studentOwnerScopedOrAdmin,
-    create: ({ req: { user } }) => user?.role === 'admin',
-    update: ({ req: { user } }) => user?.role === 'admin',
-    delete: ({ req: { user } }) => user?.role === 'admin',
+    create: ({ req: { user } }) => isAdminLike(user?.role),
+    update: ({ req: { user } }) => isAdminLike(user?.role),
+    delete: ({ req: { user } }) => isAdminLike(user?.role),
   },
   fields: [
     {

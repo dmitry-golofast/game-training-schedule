@@ -7,6 +7,7 @@ import type {
 import { sendSlotCreatedEmail } from '@/lib/email'
 import { writeOffSession } from '@/lib/subscriptions'
 import { studentScopedOrAdmin } from '@/payload/access/student-scoped'
+import { isAdminLike } from '@/lib/roles'
 
 const ALLOWED_DURATIONS = [30, 60, 90, 120]
 
@@ -33,9 +34,9 @@ export const ScheduleSlots: CollectionConfig = {
   },
   access: {
     read: studentScopedOrAdmin,
-    create: ({ req: { user } }) => user?.role === 'admin',
-    update: ({ req: { user } }) => user?.role === 'admin',
-    delete: ({ req: { user } }) => user?.role === 'admin',
+    create: ({ req: { user } }) => isAdminLike(user?.role),
+    update: ({ req: { user } }) => isAdminLike(user?.role),
+    delete: ({ req: { user } }) => isAdminLike(user?.role),
   },
   hooks: {
     /**

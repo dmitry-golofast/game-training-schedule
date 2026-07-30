@@ -1,4 +1,5 @@
 import type { Access, Where } from 'payload'
+import { isAdminLike } from '@/lib/roles'
 
 /**
  * Read access for student-scoped collections (`schedule-slots`).
@@ -22,7 +23,7 @@ import type { Access, Where } from 'payload'
  */
 export const studentScopedOrAdmin: Access = ({ req: { user } }) => {
   if (!user) return false
-  if (user.role === 'admin') return true
+  if (isAdminLike(user.role)) return true
 
   if (user.role === 'user') {
     const where: Where = {

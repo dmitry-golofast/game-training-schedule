@@ -86,14 +86,14 @@ export async function registerAction(_prev: unknown, formData: FormData) {
   }
 
   // Determine the final role server-side.
-  const requestedRole: 'user' | 'parent' | 'admin' =
-    rawRole === 'parent' || rawRole === 'admin' ? rawRole : 'user'
+  const requestedRole: 'user' | 'parent' | 'trainer' =
+    rawRole === 'parent' || rawRole === 'trainer' ? rawRole : 'user'
 
-  let role: 'user' | 'parent' | 'admin' = 'user'
-  if (requestedRole === 'admin') {
+  let role: 'user' | 'parent' | 'trainer' = 'user'
+  if (requestedRole === 'trainer') {
     const expected = process.env.ADMIN_INVITE_CODE?.trim()
     if (!expected) {
-      // Self-service admin registration is disabled.
+      // Self-service trainer registration is disabled.
       return {
         error: 'Регистрация тренеров отключена. Обратитесь к администратору.',
       }
@@ -101,7 +101,7 @@ export async function registerAction(_prev: unknown, formData: FormData) {
     if (!inviteCode || inviteCode !== expected) {
       return { error: 'Неверный код приглашения.' }
     }
-    role = 'admin'
+    role = 'trainer'
   } else {
     role = requestedRole
   }

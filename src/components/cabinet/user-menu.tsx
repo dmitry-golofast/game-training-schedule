@@ -29,7 +29,8 @@ function initials(value?: string | null) {
 const ROLE_LABELS: Record<string, string> = {
   user: 'Ученик',
   parent: 'Родитель',
-  admin: 'Тренер',
+  trainer: 'Тренер',
+  admin: 'Администратор',
 }
 
 function PendingLogout() {

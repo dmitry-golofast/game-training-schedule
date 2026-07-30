@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { studentOwnerScopedOrAdmin } from '@/payload/access/student-owner-scoped'
+import { isAdminLike } from '@/lib/roles'
 
 /**
  * Append-only ledger of credit movements for a student's subscriptions.
@@ -21,9 +22,9 @@ export const CreditTransactions: CollectionConfig = {
   },
   access: {
     read: studentOwnerScopedOrAdmin,
-    create: ({ req: { user } }) => user?.role === 'admin',
-    update: ({ req: { user } }) => user?.role === 'admin',
-    delete: ({ req: { user } }) => user?.role === 'admin',
+    create: ({ req: { user } }) => isAdminLike(user?.role),
+    update: ({ req: { user } }) => isAdminLike(user?.role),
+    delete: ({ req: { user } }) => isAdminLike(user?.role),
   },
   fields: [
     {

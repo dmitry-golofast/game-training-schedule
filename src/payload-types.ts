@@ -163,7 +163,7 @@ export interface User {
    * Телефон родителя (обязательно для учащихся до 18 лет).
    */
   parentPhone?: string | null;
-  role: 'user' | 'parent' | 'admin';
+  role: 'user' | 'parent' | 'trainer' | 'admin';
   /**
    * Законный представитель ученика (роль «Родитель»).
    */

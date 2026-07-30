@@ -6,6 +6,7 @@ import { ALLOWED_DURATIONS } from '@/lib/datetime'
 import { expandRecurrence, type RecurrenceFrequency, type RecurrenceRule } from '@/lib/recurrence'
 import { getPayloadClient, getCurrentUser } from '@/lib/payload'
 import { getUserTimezone, wallClockToUtc } from '@/lib/timezone'
+import { isAdminLike } from '@/lib/roles'
 
 const VALID_STATUSES = new Set(['planned', 'done', 'cancelled'])
 type SlotStatus = 'planned' | 'done' | 'cancelled'
@@ -23,7 +24,7 @@ type ActionResult = { success: true } | { success: false; error: string }
  */
 export async function upsertSlotAction(_prev: unknown, formData: FormData): Promise<ActionResult> {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     return { success: false, error: 'Недостаточно прав.' }
   }
 
@@ -290,7 +291,7 @@ async function materializeChildren(
  */
 export async function deleteSlotAction(_prev: unknown, formData: FormData): Promise<ActionResult> {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     return { success: false, error: 'Недостаточно прав.' }
   }
 
@@ -342,7 +343,7 @@ export async function saveAttendanceAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') {
+  if (!me || !isAdminLike(me.role)) {
     return { success: false, error: 'Недостаточно прав.' }
   }
 

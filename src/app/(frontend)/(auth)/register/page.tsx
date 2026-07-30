@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
-type Role = 'user' | 'parent' | 'admin'
+type Role = 'user' | 'parent' | 'trainer'
 
 const ROLE_OPTIONS: { value: Role; title: string; description: string }[] = [
   {
@@ -25,7 +25,7 @@ const ROLE_OPTIONS: { value: Role; title: string; description: string }[] = [
     description: 'Контролирую тренировки своих детей.',
   },
   {
-    value: 'admin',
+    value: 'trainer',
     title: 'Тренер',
     description: 'Создаю учеников и веду группы. Нужен код приглашения.',
   },
@@ -97,7 +97,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Поле «код приглашения» — только для роли Тренер (admin). */}
-        {role === 'admin' && (
+        {role === 'trainer' && (
           <div className="flex flex-col gap-2">
             <Label htmlFor="inviteCode">Код приглашения</Label>
             <Input

@@ -33,19 +33,19 @@ const STATUS_LABEL: Record<string, string> = {
   rejected: 'Отклонено',
 }
 
-export function SickLeavesClient({ items, isAdmin }: { items: Item[]; isAdmin: boolean }) {
+export function SickLeavesClient({ items, canManage }: { items: Item[]; canManage: boolean }) {
   return (
     <div className="flex flex-col gap-3">
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">Заявок на больничный пока нет.</p>
       ) : (
-        items.map((item) => <SickLeaveRow key={item.id} item={item} isAdmin={isAdmin} />)
+        items.map((item) => <SickLeaveRow key={item.id} item={item} canManage={canManage} />)
       )}
     </div>
   )
 }
 
-function SickLeaveRow({ item, isAdmin }: { item: Item; isAdmin: boolean }) {
+function SickLeaveRow({ item, canManage }: { item: Item; canManage: boolean }) {
   const [state, formAction] = useActionState(reviewSickLeaveAction, undefined)
   const [pending, startTransition] = useTransition()
   const [reviewNote, setReviewNote] = useState('')
@@ -95,7 +95,7 @@ function SickLeaveRow({ item, isAdmin }: { item: Item; isAdmin: boolean }) {
         <p className="text-xs text-muted-foreground">Комментарий тренера: {item.reviewNote}</p>
       ) : null}
 
-      {isAdmin && item.status === 'pending' ? (
+      {canManage && item.status === 'pending' ? (
         <form
           action={formAction}
           onSubmit={() => startTransition(() => {})}

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { isAdminLike } from '@/lib/roles'
 
 type ActionResult = { success: true } | { success: false; error: string }
 
@@ -86,7 +87,7 @@ export async function deleteDocumentAction(
 
   const payload = await getPayloadClient()
   try {
-    await payload.delete({ collection: 'documents', id, overrideAccess: me.role === 'admin' })
+    await payload.delete({ collection: 'documents', id, overrideAccess: isAdminLike(me.role) })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return { success: false, error: `Не удалось удалить. ${message}` }

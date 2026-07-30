@@ -1,4 +1,5 @@
 import type { CollectionConfig, Where } from 'payload'
+import { isAdminLike } from '@/lib/roles'
 
 /**
  * The application's auth collection.
@@ -36,7 +37,7 @@ export const Users: CollectionConfig = {
     // admin → все; parent → себя + своих детей; user → только себя.
     read: ({ req: { user } }) => {
       if (!user) return false
-      if (user.role === 'admin') return true
+      if (isAdminLike(user.role)) return true
       if (user.role === 'parent') {
         const where: Where = {
           $or: [{ id: { equals: user.id } }, { parent: { equals: user.id } }],
@@ -51,7 +52,7 @@ export const Users: CollectionConfig = {
     // admin → любого; parent → себя + детей; user → только себя.
     update: ({ req: { user }, id }) => {
       if (!user) return false
-      if (user.role === 'admin') return true
+      if (isAdminLike(user.role)) return true
       if (user.role === 'parent') {
         const where: Where = {
           $or: [{ id: { equals: user.id } }, { parent: { equals: user.id } }],
@@ -61,7 +62,7 @@ export const Users: CollectionConfig = {
       return user.id === id
     },
     // Только admin может удалять пользователей.
-    delete: ({ req: { user } }) => user?.role === 'admin',
+    delete: ({ req: { user } }) => isAdminLike(user?.role),
   },
   fields: [
     {
@@ -108,12 +109,13 @@ export const Users: CollectionConfig = {
       options: [
         { label: 'Ученик', value: 'user' },
         { label: 'Родитель', value: 'parent' },
-        { label: 'Тренер (администратор)', value: 'admin' },
+        { label: 'Тренер', value: 'trainer' },
+        { label: 'Администратор', value: 'admin' },
       ],
       // Only admins can grant or change roles — prevents privilege escalation.
       access: {
         create: () => true,
-        update: ({ req: { user } }) => user?.role === 'admin',
+        update: ({ req: { user } }) => isAdminLike(user?.role),
       },
       admin: {
         position: 'sidebar',

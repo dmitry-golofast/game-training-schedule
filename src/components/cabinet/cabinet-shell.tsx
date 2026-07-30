@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import type { User } from '@/payload-types'
+import { isAdminLike } from '@/lib/roles'
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> }
 
@@ -51,7 +52,7 @@ const ADMIN_NAV: NavItem[] = [
 
 function buildNav(role: string): NavItem[] {
   const nav = [...COMMON_NAV]
-  if (role === 'admin') {
+  if (isAdminLike(role)) {
     nav.splice(1, 0, ...ADMIN_NAV)
   }
   return nav

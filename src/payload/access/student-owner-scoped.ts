@@ -1,4 +1,5 @@
 import type { Access, Where } from 'payload'
+import { isAdminLike } from '@/lib/roles'
 
 /**
  * Read access scoped by a `student` relationship field.
@@ -18,7 +19,7 @@ import type { Access, Where } from 'payload'
  */
 export const studentOwnerScopedOrAdmin: Access = ({ req: { user } }) => {
   if (!user) return false
-  if (user.role === 'admin') return true
+  if (isAdminLike(user.role)) return true
   if (user.role === 'user') {
     return { student: { equals: user.id } } satisfies Where
   }

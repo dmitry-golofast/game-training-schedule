@@ -7,6 +7,7 @@ import { PaymentHistory } from '@/app/(frontend)/cabinet/profile/payment-history
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Профиль ученика' }
 
@@ -26,7 +27,7 @@ function computeAge(birthDate?: string | null): number | null {
 
 export default async function StudentProfilePage({ params }: { params: Params }) {
   const me = await getCurrentUser()
-  if (!me || me.role !== 'admin') notFound()
+  if (!me || !isAdminLike(me.role)) notFound()
 
   const { id } = await params
 
