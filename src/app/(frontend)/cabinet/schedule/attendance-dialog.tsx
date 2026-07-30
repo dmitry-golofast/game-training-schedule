@@ -51,7 +51,7 @@ export function AttendanceDialog({
     if (shownRef.current) return
     shownRef.current = true
     if (state.success) {
-      toast.success('Журнал сохранён. Тренировка завершена.')
+      toast.success('Журнал сохранён.')
       setOpen(false)
     } else if ('error' in state) {
       toast.error(state.error)
@@ -149,7 +149,7 @@ export function AttendanceDialog({
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isPending || participants.length === 0}>
-              {isPending ? 'Сохраняем…' : 'Сохранить и завершить'}
+              {isPending ? 'Сохраняем…' : 'Сохранить'}
             </Button>
           </DialogFooter>
         </form>

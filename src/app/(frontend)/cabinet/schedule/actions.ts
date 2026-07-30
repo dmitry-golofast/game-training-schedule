@@ -374,7 +374,6 @@ export async function saveAttendanceAction(
       id: slotId,
       overrideAccess: true,
       data: {
-        status: 'done',
         attendance,
       },
     })
