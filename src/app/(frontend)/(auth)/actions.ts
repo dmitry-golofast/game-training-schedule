@@ -10,6 +10,11 @@ import { getPayloadClient } from '@/lib/payload'
 const PAYLOAD_TOKEN_COOKIE = 'payload-token'
 // Keep in sync with `auth.tokenExpiration` on the users collection (7200s).
 const TOKEN_MAX_AGE = 7200
+// Whether the app is served over HTTPS — drives the `secure` flag on the
+// session cookie so it is only ever sent over an encrypted connection.
+// Derived from NEXT_PUBLIC_SERVER_URL (inlined at build time). The same
+// single source of truth is used by login / register / logout below.
+const IS_HTTPS = (process.env.NEXT_PUBLIC_SERVER_URL ?? '').startsWith('https')
 
 /**
  * Sign in via Payload's Local API. On success the JWT returned by
@@ -43,10 +48,9 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   }
 
   const cookieStore = await cookies()
-  const isHttps = (process.env.NEXT_PUBLIC_SERVER_URL ?? '').startsWith('https')
   cookieStore.set(PAYLOAD_TOKEN_COOKIE, token, {
     httpOnly: true,
-    secure: isHttps,
+    secure: IS_HTTPS,
     path: '/',
     sameSite: 'lax',
     maxAge: TOKEN_MAX_AGE,
@@ -137,7 +141,7 @@ export async function registerAction(_prev: unknown, formData: FormData) {
     const cookieStore = await cookies()
     cookieStore.set(PAYLOAD_TOKEN_COOKIE, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: IS_HTTPS,
       path: '/',
       sameSite: 'lax',
       maxAge: TOKEN_MAX_AGE,
@@ -155,7 +159,7 @@ export async function logoutAction() {
   // Delete with explicit options to match how the cookie was set.
   cookieStore.set(PAYLOAD_TOKEN_COOKIE, '', {
     httpOnly: true,
-    secure: (process.env.NEXT_PUBLIC_SERVER_URL ?? '').startsWith('https'),
+    secure: IS_HTTPS,
     path: '/',
     sameSite: 'lax',
     maxAge: 0,
