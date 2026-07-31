@@ -1,4 +1,5 @@
 import { CheckIcon, StarIcon } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
 
@@ -479,8 +480,15 @@ export function LandingNav() {
       }}
     >
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="text-xl font-bold tracking-tight text-white">
-          Slotory
+        <Link href="/" className="flex items-center" aria-label="eventFit">
+          <Image
+            src="/logo.png"
+            alt="eventFit"
+            width={143}
+            height={36}
+            priority
+            className="h-9 w-auto object-contain"
+          />
         </Link>
         <nav className="flex items-center gap-3">
           <Link
