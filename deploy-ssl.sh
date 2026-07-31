@@ -117,7 +117,13 @@ ok "Pre-flight checks passed."
 
 # ── Step 1: Obtain certificate ─────────────────────────────────
 step "Requesting certificate from Let's Encrypt (webroot mode)..."
-docker compose run --rm certbot certonly \
+# The certbot service in docker-compose.yml overrides `entrypoint` to a
+# `/bin/sh -c` renew loop (for the always-on auto-renew daemon). That
+# entrypoint is sticky for `docker compose run`, so our CLI args would be
+# glued onto `/bin/sh -c` and the command would fail with "certonly: not
+# found". Override the entrypoint back to the certbot binary for THIS
+# one-shot invocation only — the renew daemon container is untouched.
+docker compose run --rm --entrypoint certbot certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
     --email "$EMAIL" \
@@ -160,13 +166,16 @@ case "$HTTPS_CODE" in
 esac
 
 # 3. Certificate validity window (certbot leaves the dates on disk).
+# The certbot container's sticky `/bin/sh -c` entrypoint would swallow a
+# bare `openssl ...`, so invoke it via an explicit shell command.
 CERT_PATH="/etc/letsencrypt/live/${DOMAIN}/cert.pem"
-CERT_INFO="$(docker compose exec -T certbot openssl x509 -in "$CERT_PATH" -noout -dates 2>/dev/null || true)"
+CERT_INFO="$(docker compose exec -T certbot /bin/sh -c "openssl x509 -in '$CERT_PATH' -noout -dates" 2>/dev/null || true)"
 if [ -n "$CERT_INFO" ]; then
     echo "  Certificate dates:"
     echo "$CERT_INFO" | sed 's/^/    /'
 else
-    warn "Could not read certificate dates (openssl). Manual check: docker compose exec certbot openssl x509 -in $CERT_PATH -noout -dates"
+    warn "Could not read certificate dates. Manual check:"
+    warn "  docker compose exec certbot /bin/sh -c \"openssl x509 -in $CERT_PATH -noout -dates\""
 fi
 
 # 4. Auto-renewal container present.
@@ -182,4 +191,5 @@ c_green "=== SSL setup complete ==="
 echo "Site is now available at https://${DOMAIN}"
 echo ""
 echo "Certificates auto-renew via the certbot container."
-echo "Manual renew test: docker compose run --rm certbot renew --dry-run"
+echo "Manual renew test:"
+echo "  docker compose run --rm --entrypoint certbot certbot renew --dry-run"
