@@ -34,35 +34,61 @@ c_bold "=== SSL Setup for ${DOMAIN} ==="
 # ── Pre-flight checks ──────────────────────────────────────────
 step "Pre-flight checks"
 
-# 1. This server's public IPv4 (first non-loopback address).
-SERVER_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
-if [ -z "$SERVER_IP" ]; then
-    warn "Could not detect server IP via 'hostname -I'. DNS check will be skipped."
+# 1. This server's public addresses — IPv4 AND global IPv6. We must know both,
+#    because a hostname may resolve via an AAAA record and Let's Encrypt will
+#    follow whichever address it gets. Enumerate via `ip` (hostname -I is
+#    IPv4-biased and would miss the server's own IPv6, causing false negatives).
+SERVER_IPS="$(
+    {
+        ip -4 addr show scope global 2>/dev/null | awk '/inet /  {print $2}';
+        ip -6 addr show scope global 2>/dev/null | awk '/inet6 / {print $2}';
+    } | cut -d/ -f1 | sort -u
+)"
+if [ -z "$SERVER_IPS" ]; then
+    warn "Could not enumerate server IPs via 'ip'. DNS check will be skipped."
 fi
 
-# 2. Resolve each hostname and compare to the server IP. A mismatch means
-#    Let's Encrypt validation will fail, so we abort before hitting rate limits.
+# 2. Resolve every A/AAAA record for a host and require EACH to belong to this
+#    server. A stray record (e.g. an AAAA pointing elsewhere) can make Let's
+#    Encrypt validate against the wrong host and fail, so we abort before
+#    hitting rate limits. getent ahostsv6 may emit IPv4-mapped IPv6
+#    (::ffff:1.2.3.4); strip that prefix so IPv4 normalizes correctly.
 check_dns() {
     local host="$1"
-    local resolved
-    resolved="$(getent hosts "$host" 2>/dev/null | awk '{print $1}' | head -n1)"
+    local resolved ip bad=0
+
+    resolved="$(
+        {
+            getent ahostsv4 "$host" 2>/dev/null | awk '{print $1}';
+            getent ahostsv6 "$host" 2>/dev/null | awk '{print $1}' | sed 's/^::ffff://';
+        } | sort -u
+    )"
+
     if [ -z "$resolved" ]; then
-        # Fall back to dig/host if getent has no record (e.g. no nsswitch DNS).
-        resolved="$(dig +short "$host" A 2>/dev/null | grep -E '^[0-9]' | head -n1)"
-    fi
-    if [ -z "$resolved" ]; then
-        fail "${host}: DNS record not found."
+        fail "${host}: no A/AAAA record found."
         EXIT_CODE=1
         return 1
     fi
-    if [ -n "$SERVER_IP" ] && [ "$resolved" != "$SERVER_IP" ]; then
-        fail "${host} resolves to ${resolved}, but this server is ${SERVER_IP}."
-        fail "Point DNS at this server first, or certbot validation will fail."
-        EXIT_CODE=1
-        return 1
+
+    if [ -z "$SERVER_IPS" ]; then
+        ok "${host} → ${resolved//$'\n'/, } (server IPs unknown, not verified)"
+        return 0
     fi
-    ok "${host} → ${resolved}"
-    return 0
+
+    while IFS= read -r ip; do
+        [ -z "$ip" ] && continue
+        if grep -qxF "$ip" <<< "$SERVER_IPS"; then
+            ok "${host} → ${ip}"
+        else
+            fail "${host} resolves to ${ip}, which is NOT assigned to this server."
+            fail "  Point this record at the server, or remove it — for an AAAA"
+            fail "  record, delete it in your DNS panel (e.g. nic.ru)."
+            bad=1
+            EXIT_CODE=1
+        fi
+    done <<< "$resolved"
+
+    return $bad
 }
 
 check_dns "$DOMAIN" || true
