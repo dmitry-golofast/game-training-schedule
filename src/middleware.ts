@@ -8,13 +8,15 @@ import { NextResponse, type NextRequest } from 'next/server'
  *    on app.eventfit.ru. Opening an auth route on the apex domain bounces to
  *    the same path on `app.` so the session cookie is scoped to one host.
  *
- * 2) /admin → reject any non-`admin` session.
+ * 2) /admin → reject anyone who is not an `admin`.
  *    Payload's `admin.access.admin` only hides the panel UI — Payload still
  *    mints a `payload-token` for ANY authenticated user of the `users`
  *    collection (students, parents, trainers), which lets them reach `/admin`
  *    and even see the panel chrome. This guard reads the role from the JWT in
- *    `payload-token` and hard-redirects non-admins to `/admin/login`,
- *    preventing the panel from ever rendering for them.
+ *    `payload-token` and hard-redirects non-admins (and unauthenticated
+ *    visitors) to the home page of whichever host served the request:
+ *      eventfit.ru/admin       → eventfit.ru/
+ *      app.eventfit.ru/admin   → app.eventfit.ru/
  */
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
@@ -37,44 +39,21 @@ export const config = {
 // ── Guard 2: admin panel ────────────────────────────────────────
 
 function guardAdmin(request: NextRequest, pathname: string) {
-  // Allow the login route itself — users must be able to reach the sign-in
-  // form. Payload's own access control covers the post-login panel view, but
-  // we additionally block already-authenticated non-admins below.
-  if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
-    // Even on the login page, if the visitor already holds a non-admin
-    // session, bouncing them back to the login form is correct — they can
-    // sign out and retry as an admin. But more importantly, don't redirect
-    // someone with no token (the normal "please log in" flow).
-    const token = request.cookies.get('payload-token')?.value
-    if (token && getRoleFromToken(token) !== 'admin') {
-      // Clear the stale token so the login form starts fresh.
-      const res = NextResponse.redirect(new URL('/admin/login', request.url))
-      res.cookies.delete('payload-token')
-      return res
-    }
-    return NextResponse.next()
-  }
-
   const token = request.cookies.get('payload-token')?.value
+  const role = token ? getRoleFromToken(token) : null
 
-  // No session → let Payload show its own login page (redirects to /admin/login).
-  if (!token) {
-    return NextResponse.next()
-  }
-
-  const role = getRoleFromToken(token)
-
-  // Admin → allow through to the panel.
+  // Admin → allow through to the panel (including /admin/login, which an
+  // already-authed admin simply skips past).
   if (role === 'admin') {
     return NextResponse.next()
   }
 
-  // Non-admin with a session → block. Redirect to /admin/login and strip the
-  // token so the panel can't pick it up. This is the core fix: previously a
-  // student/parent/trainer JWT was enough to enter /admin.
-  const res = NextResponse.redirect(new URL('/admin/login', request.url))
-  res.cookies.delete('payload-token')
-  return res
+  // Everyone else — non-admins AND unauthenticated visitors — gets bounced
+  // to the home page of whichever host served the request:
+  //   eventfit.ru/admin       → eventfit.ru/
+  //   app.eventfit.ru/admin   → app.eventfit.ru/
+  // `new URL('/', request.url)` preserves the current host and protocol.
+  return NextResponse.redirect(new URL('/', request.url))
 }
 
 /**
