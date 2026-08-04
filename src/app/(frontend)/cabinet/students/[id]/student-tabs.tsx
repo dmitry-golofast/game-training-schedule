@@ -97,7 +97,7 @@ export function StudentTabs({
   return (
     <div className="flex flex-col gap-4">
       {/* Tab bar — horizontal scroll on mobile, static on desktop */}
-      <div className="-mx-4 overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0">
+      <div className="-mx-4 [scrollbar-width:none] overflow-x-auto border-b border-border px-4 [-ms-overflow-style:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
         <div className="flex gap-1 pb-px">
           {TABS.map((tab) => {
             const badge =
