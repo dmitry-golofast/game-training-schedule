@@ -1,15 +1,15 @@
 #!/bin/bash
 #
-# Deploy script for slotory.ru
+# Deploy script for eventfit.ru
 # Run on the server: ./deploy.sh
 #
 set -euo pipefail
 
 REPO_URL="https://github.com/dmitrygolofast/game-training-schedule.git"
-APP_DIR="/opt/slotory"
+APP_DIR="/opt/eventfit"
 BRANCH="main"
 
-echo "=== Slotory Deploy ==="
+echo "=== eventFit Deploy ==="
 
 # Clone or pull
 if [ -d "$APP_DIR/.git" ]; then
@@ -47,4 +47,4 @@ echo "Next steps:"
 echo "  1. Run ./deploy-ssl.sh to obtain SSL certificates"
 echo "  2. Set up cron for reminders:"
 echo "     crontab -e"
-echo "     0 * * * * curl -s -H 'Authorization: Bearer YOUR_CRON_SECRET' https://slotory.ru/api/cron/send-reminders"
+echo "     0 * * * * curl -s -H 'Authorization: Bearer YOUR_CRON_SECRET' https://eventfit.ru/api/cron/send-reminders"

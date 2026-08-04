@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: slotory-app
+    container_name: eventfit-app
     restart: unless-stopped
     env_file:
       - .env
@@ -13,11 +13,11 @@ services:
       mongo:
         condition: service_healthy
     networks:
-      - slotory-net
+      - eventfit-net
 
   mongo:
     image: mongo:7
-    container_name: slotory-mongo
+    container_name: eventfit-mongo
     restart: unless-stopped
     command: ['--storageEngine', 'wiredTiger']
     volumes:
@@ -28,11 +28,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - slotory-net
+      - eventfit-net
 
   nginx:
     image: nginx:alpine
-    container_name: slotory-nginx
+    container_name: eventfit-nginx
     restart: unless-stopped
     ports:
       - '80:80'
@@ -44,18 +44,18 @@ services:
     depends_on:
       - app
     networks:
-      - slotory-net
+      - eventfit-net
 
   certbot:
     image: certbot/certbot
-    container_name: slotory-certbot
+    container_name: eventfit-certbot
     volumes:
       - certbot-web:/var/www/certbot
       - certbot-certs:/etc/letsencrypt
     entrypoint: ['/bin/sh', '-c']
     command: ['trap exit TERM; while :; do sleep 6h & wait $${!}; certbot renew; done']
     networks:
-      - slotory-net
+      - eventfit-net
 
 volumes:
   mongo-data:
@@ -64,5 +64,5 @@ volumes:
   certbot-certs:
 
 networks:
-  slotory-net:
+  eventfit-net:
     driver: bridge

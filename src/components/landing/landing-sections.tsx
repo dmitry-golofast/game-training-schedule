@@ -96,7 +96,7 @@ export function Hero({
       style={bgStyle}
     >
       <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-        {hero?.heading ?? 'Slotory'}
+        {hero?.heading ?? 'eventFit'}
       </h1>
       {hero?.subheading ? (
         <p className="text-muted-landing mt-6 max-w-2xl text-lg">{hero.subheading}</p>
@@ -171,7 +171,7 @@ export function FeaturesSection({ items }: { items?: FeatureCard[] | null }) {
   if (!items?.length) return null
   return (
     <Section>
-      <SectionTitle>Возможности Slotory</SectionTitle>
+      <SectionTitle>Возможности eventFit</SectionTitle>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((card, i) => (
           <div key={i} className="landing-card p-5">
@@ -332,7 +332,7 @@ export function AdvantagesSection({ items }: { items?: IconText[] | null }) {
   if (!items?.length) return null
   return (
     <Section>
-      <SectionTitle>Почему выбирают Slotory</SectionTitle>
+      <SectionTitle>Почему выбирают eventFit</SectionTitle>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {items.map((item, i) => (
           <div key={i} className="landing-card p-4 text-center">
@@ -516,7 +516,7 @@ export function LandingFooter() {
     <footer className="border-t" style={{ borderColor: 'var(--landing-border)' }}>
       <div className="mx-auto w-full max-w-6xl px-4 py-8 text-center">
         <p className="text-muted-landing text-sm">
-          © {new Date().getFullYear()} Slotory — система управления тренировками
+          © {new Date().getFullYear()} eventFit — система управления тренировками
         </p>
       </div>
     </footer>

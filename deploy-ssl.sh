@@ -1,18 +1,18 @@
 #!/bin/bash
 #
-# Initial SSL certificate setup for slotory.ru via Let's Encrypt.
+# Initial SSL certificate setup for eventfit.ru via Let's Encrypt.
 #
 # Prerequisites:
-#   1. Domain slotory.ru must point to this server's IP.
+#   1. Domain eventfit.ru must point to this server's IP.
 #   2. docker compose up -d (nginx running with HTTP-only config).
 #   3. Run: ./deploy-ssl.sh your@email.ru
 #
 set -euo pipefail
 
-DOMAIN="slotory.ru"
+DOMAIN="eventfit.ru"
 WILDCARDS=("www.${DOMAIN}" "app.${DOMAIN}")
 EMAIL="${1:-admin@${DOMAIN}}"
-APP_DIR="/opt/slotory"
+APP_DIR="/opt/eventfit"
 EXIT_CODE=0
 
 # ── Helpers ────────────────────────────────────────────────────
@@ -135,8 +135,8 @@ docker compose run --rm --entrypoint certbot certbot certonly \
 
 # ── Step 2: Activate the SSL nginx config ──────────────────────
 step "Switching nginx to HTTPS config..."
-cp nginx/slotory.ru.ssl.conf.disabled nginx/slotory.ru.conf
-ok "nginx/slotory.ru.conf replaced with the SSL version."
+cp nginx/eventfit.ru.ssl.conf.disabled nginx/eventfit.ru.conf
+ok "nginx/eventfit.ru.conf replaced with the SSL version."
 
 # ── Step 3: Reload nginx ───────────────────────────────────────
 step "Reloading nginx..."

@@ -9,8 +9,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Slotory',
-    template: '%s · Slotory',
+    default: 'eventFit',
+    template: '%s · eventFit',
   },
   description: 'Personal cabinet for game training schedules.',
 }

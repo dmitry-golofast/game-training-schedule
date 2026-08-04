@@ -1,10 +1,10 @@
 # ─── Full config with SSL (used AFTER certificates are obtained) ─
-# Rename this to slotory.ru.conf after running ./deploy-ssl.sh
+# Rename this to eventfit.ru.conf after running ./deploy-ssl.sh
 
 # ── HTTP redirects (both domains) ──
 server {
     listen 80;
-    server_name slotory.ru www.slotory.ru app.slotory.ru;
+    server_name eventfit.ru www.eventfit.ru app.eventfit.ru;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -15,14 +15,14 @@ server {
     }
 }
 
-# ── slotory.ru → landing page (HTTPS) ──
+# ── eventfit.ru → landing page (HTTPS) ──
 server {
     listen 443 ssl;
     http2 on;
-    server_name slotory.ru www.slotory.ru;
+    server_name eventfit.ru www.eventfit.ru;
 
-    ssl_certificate     /etc/letsencrypt/live/slotory.ru/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/slotory.ru/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/eventfit.ru/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/eventfit.ru/privkey.pem;
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers off;
@@ -48,14 +48,14 @@ server {
     }
 }
 
-# ── app.slotory.ru → /login redirect (HTTPS) ──
+# ── app.eventfit.ru → /login redirect (HTTPS) ──
 server {
     listen 443 ssl;
     http2 on;
-    server_name app.slotory.ru;
+    server_name app.eventfit.ru;
 
-    ssl_certificate     /etc/letsencrypt/live/slotory.ru/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/slotory.ru/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/eventfit.ru/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/eventfit.ru/privkey.pem;
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers off;

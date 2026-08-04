@@ -1,7 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 /**
- * CMS-managed landing page content. All 15 sections of the Slotory landing
+ * CMS-managed landing page content. All 15 sections of the eventFit landing
  * page are editable from the Payload admin panel. Default values use ASCII
  * to avoid encoding issues with MongoDB.
  */
@@ -25,7 +25,7 @@ export const LandingContent: GlobalConfig = {
         {
           name: 'subheading',
           type: 'textarea',
-          defaultValue: 'Slotory obyedinyaet roditeley, detey i trenerov v odnom prilozhenii.',
+          defaultValue: 'eventFit obyedinyaet roditeley, detey i trenerov v odnom prilozhenii.',
         },
         { name: 'ctaText', type: 'text', defaultValue: 'Poprobovat besplatno' },
         {
@@ -223,7 +223,7 @@ export const LandingContent: GlobalConfig = {
         {
           name: 'subheading',
           type: 'textarea',
-          defaultValue: 'Slotory pomogaet rebenku zanimatsya regulyarno.',
+          defaultValue: 'eventFit pomogaet rebenku zanimatsya regulyarno.',
         },
         { name: 'ctaText', type: 'text', defaultValue: 'Poprobovat besplatno' },
         { name: 'note', type: 'text', defaultValue: '14 dney besplatno • Otmena v lyuboy moment' },

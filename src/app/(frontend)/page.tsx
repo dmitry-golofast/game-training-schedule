@@ -129,7 +129,7 @@ export default async function HomePage() {
         {blocks.length === 0 ? (
           <div className="flex min-h-svh items-center justify-center px-4 text-center">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Slotory</h1>
+              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">eventFit</h1>
               <p className="text-muted-landing mt-4 text-lg">Sistema upravleniya trenirovkami</p>
               <a
                 href="/register"
