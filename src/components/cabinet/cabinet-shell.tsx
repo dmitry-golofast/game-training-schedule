@@ -18,15 +18,7 @@ import * as React from 'react'
 
 import { UserMenu } from '@/components/cabinet/user-menu'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import type { User } from '@/payload-types'
 import { isAdminLike } from '@/lib/roles'
@@ -86,30 +78,72 @@ function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => v
   )
 }
 
+// Quick actions pinned to the mobile bottom bar. The rest of the navigation
+// (Обзор, Абонементы, Ученики, Группы, Оплаты, Больничные) stays in the drawer
+// opened via the Menu button.
+const QUICK_NAV: NavItem[] = [
+  { href: '/cabinet/schedule', label: 'Расписание', icon: CalendarDaysIcon },
+  { href: '/cabinet/profile', label: 'Профиль', icon: UserIcon },
+  { href: '/cabinet/settings', label: 'Настройки', icon: SettingsIcon },
+]
+
+/** Bottom navigation bar — mobile only. First button opens the drawer. */
+function MobileTabBar({ onOpenMenu }: { onOpenMenu: () => void }) {
+  const pathname = usePathname()
+  return (
+    <nav
+      aria-label="Быстрая навигация"
+      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border bg-background/95 backdrop-blur md:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <TabBarButton label="Меню" icon={MenuIcon} active={false} onClick={onOpenMenu} />
+      {QUICK_NAV.map((item) => {
+        const active = pathname === item.href || pathname.startsWith(item.href + '/')
+        return (
+          <Link key={item.href} href={item.href} className="contents">
+            <TabBarButton label={item.label} icon={item.icon} active={active} />
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
+function TabBarButton({
+  label,
+  icon: Icon,
+  active,
+  onClick,
+}: {
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  active: boolean
+  onClick?: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'flex flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
+        active ? 'text-primary' : 'text-muted-foreground',
+      )}
+    >
+      <Icon className="size-5" />
+      <span className="leading-none">{label}</span>
+    </button>
+  )
+}
+
 export function CabinetShell({ user, children }: { user: User; children: React.ReactNode }) {
   const nav = buildNav(user.role)
+  const [menuOpen, setMenuOpen] = React.useState(false)
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4">
-          {/* Mobile hamburger */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <MenuIcon className="size-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72">
-              <SheetHeader>
-                <SheetTitle className="px-0">Меню</SheetTitle>
-              </SheetHeader>
-              <div className="px-2">
-                <NavList items={nav} />
-              </div>
-            </SheetContent>
-          </Sheet>
-
           {/* Logo */}
           <Link href="/cabinet" className="font-semibold tracking-tight">
             eventFit
@@ -129,7 +163,7 @@ export function CabinetShell({ user, children }: { user: User; children: React.R
             ))}
           </nav>
 
-          {/* Spacer for mobile (nav is in drawer) */}
+          {/* Spacer for mobile (nav is in the bottom bar) */}
           <div className="flex-1 md:hidden" />
 
           {/* Controls */}
@@ -140,7 +174,20 @@ export function CabinetShell({ user, children }: { user: User; children: React.R
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-24 md:pb-8">{children}</main>
+
+      {/* Mobile bottom bar + drawer controlled by it */}
+      <MobileTabBar onOpenMenu={() => setMenuOpen(true)} />
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetContent side="left" className="w-72">
+          <SheetHeader>
+            <SheetTitle className="px-0">Меню</SheetTitle>
+          </SheetHeader>
+          <div className="px-2">
+            <NavList items={nav} onNavigate={() => setMenuOpen(false)} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
