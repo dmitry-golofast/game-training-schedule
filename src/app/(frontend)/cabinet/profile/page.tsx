@@ -1,10 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { PreferencesForm } from '@/app/(frontend)/cabinet/profile/preferences-form'
-import { DocumentsSection } from '@/app/(frontend)/cabinet/profile/documents-section'
-import { PaymentHistory } from '@/app/(frontend)/cabinet/profile/payment-history'
-import { ChildrenSection } from '@/app/(frontend)/cabinet/profile/children-section'
+import { ProfileTabs } from '@/app/(frontend)/cabinet/profile/profile-tabs'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
 import { isAdminLike } from '@/lib/roles'
 
@@ -111,11 +105,11 @@ export default async function ProfilePage() {
   const payments = paymentsResult.docs.map((p) => ({
     id: p.id,
     amount: p.amount,
-    currency: p.currency,
-    periodFrom: p.periodFrom,
-    periodTo: p.periodTo,
+    currency: p.currency ?? null,
+    periodFrom: p.periodFrom ?? '',
+    periodTo: p.periodTo ?? '',
     method: p.method ?? null,
-    paidAt: p.paidAt,
+    paidAt: p.paidAt ?? '',
     student:
       typeof p.student === 'object' && p.student
         ? { id: p.student.id, name: p.student.name || p.student.email }
@@ -135,6 +129,15 @@ export default async function ProfilePage() {
         : null,
   }))
 
+  const roleLabel =
+    me.role === 'admin'
+      ? 'Администратор'
+      : me.role === 'trainer'
+        ? 'Тренер'
+        : me.role === 'parent'
+          ? 'Родитель'
+          : 'Ученик'
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -144,160 +147,17 @@ export default async function ProfilePage() {
         </p>
       </div>
 
-      <Tabs defaultValue="account">
-        <TabsList>
-          <TabsTrigger value="account">Аккаунт</TabsTrigger>
-          <TabsTrigger value="subscription">Абонемент</TabsTrigger>
-          <TabsTrigger value="payments">Оплаты</TabsTrigger>
-          <TabsTrigger value="documents">Документы</TabsTrigger>
-          <TabsTrigger value="settings">Настройки</TabsTrigger>
-        </TabsList>
-
-        {/* Аккаунт: данные + (для parent) мои дети */}
-        <TabsContent value="account">
-          <Card>
-            <CardHeader>
-              <CardTitle>Данные аккаунта</CardTitle>
-              <CardDescription>Эти данные видны только вам и администраторам.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <Row label="Имя" value={me.name || '—'} />
-              <Separator />
-              <Row label="Email" value={me.email} />
-              <Separator />
-              <Row
-                label="Роль"
-                value={
-                  me.role === 'admin'
-                    ? 'Администратор'
-                    : me.role === 'trainer'
-                      ? 'Тренер'
-                      : me.role === 'parent'
-                        ? 'Родитель'
-                        : 'Ученик'
-                }
-              />
-            </CardContent>
-          </Card>
-
-          {me.role === 'parent' ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Мои дети</CardTitle>
-                <CardDescription>
-                  Привяжите учеников по их email, чтобы видеть их расписание и данные.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChildrenSection children={childrenData} />
-              </CardContent>
-            </Card>
-          ) : null}
-        </TabsContent>
-
-        {/* Абонемент — виджет остатка (ТЗ п.4) */}
-        <TabsContent value="subscription">
-          <Card>
-            <CardHeader>
-              <CardTitle>Абонемент</CardTitle>
-              <CardDescription>
-                Сколько тренировок осталось и до какой даты действует.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {subscriptions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Активных абонементов нет.</p>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {subscriptions.map((sub) => {
-                    const pct =
-                      sub.totalCredits > 0
-                        ? Math.round((sub.remainingCredits / sub.totalCredits) * 100)
-                        : 0
-                    return (
-                      <div key={sub.id} className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">
-                            {sub.student?.name ?? ''} ·{' '}
-                            {sub.kind === 'group' ? 'Групповой' : 'Индивидуальный'}
-                          </span>
-                          <span className="text-sm">
-                            Осталось <span className="font-semibold">{sub.remainingCredits}</span>{' '}
-                            из {sub.totalCredits}
-                          </span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
-                          <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Действует до: {sub.validUntil?.slice(0, 10)}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Оплаты — таблица с последней оплатой и периодом (ТЗ п.2) */}
-        <TabsContent value="payments">
-          <Card>
-            <CardHeader>
-              <CardTitle>Оплаты</CardTitle>
-              <CardDescription>История платежей с периодами.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PaymentHistory payments={payments} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Документы — загрузка и хранение (ТЗ п.1) */}
-        <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle>Документы</CardTitle>
-              <CardDescription>Медицинские справки, договоры, чеки и другие файлы.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DocumentsSection
-                documents={documents}
-                students={viewableStudents}
-                canSelectStudent={canSelectStudent}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Настройки */}
-        <TabsContent value="settings">
-          <Card>
-            <CardHeader>
-              <CardTitle>Настройки</CardTitle>
-              <CardDescription>Имя для отображения и напоминания.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PreferencesForm
-                name={me.name ?? null}
-                reminderLeadHours={
-                  typeof me.reminderLeadHours === 'number' ? me.reminderLeadHours : 24
-                }
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
-}
-
-function Row({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium">{value}</span>
+      <ProfileTabs
+        account={{ name: me.name ?? '', email: me.email, role: roleLabel }}
+        children={childrenData}
+        subscriptions={subscriptions}
+        payments={payments}
+        documents={documents}
+        viewableStudents={viewableStudents}
+        canSelectStudent={canSelectStudent}
+        isParent={me.role === 'parent'}
+        reminderLeadHours={typeof me.reminderLeadHours === 'number' ? me.reminderLeadHours : 24}
+      />
     </div>
   )
 }
