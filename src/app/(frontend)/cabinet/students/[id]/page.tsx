@@ -57,7 +57,12 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   let documents: AnyDoc[] = []
   let sickLeaves: AnyDoc[] = []
   let scheduleSlots: AnyDoc[] = []
-  let templates: { id: string; title: string; kind: string; totalCredits: number }[] = []
+  let templates: {
+    id: string
+    title: string
+    kind: 'individual' | 'group'
+    totalCredits: number
+  }[] = []
 
   try {
     const [subsResult, paymentsResult, docsResult, sickResult, slotsResult, tplResult] =
@@ -118,7 +123,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
     templates = tplResult.docs.map((t) => ({
       id: t.id,
       title: t.title,
-      kind: t.kind,
+      kind: t.kind === 'group' ? ('group' as const) : ('individual' as const),
       totalCredits: t.totalCredits,
     }))
   } catch {
