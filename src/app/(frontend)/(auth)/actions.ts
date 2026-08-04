@@ -17,6 +17,31 @@ const TOKEN_MAX_AGE = 7200
 const IS_HTTPS = (process.env.NEXT_PUBLIC_SERVER_URL ?? '').startsWith('https')
 
 /**
+ * Cookie domain scoped so the session is shared across the apex domain and
+ * all its subdomains (eventfit.ru, app.eventfit.ru, www.eventfit.ru).
+ *
+ * Without an explicit `domain`, the cookie is bound to whichever host served
+ * the login form (e.g. app.eventfit.ru), so the apex domain never sees it
+ * and the user appears logged-out on the landing. Setting `domain` to the
+ * registrable apex (".eventfit.ru") makes the cookie visible everywhere.
+ *
+ * Returns undefined in local dev (localhost has no parent domain, and an
+ * empty/undefined `domain` keeps the cookie on the current host — which is
+ * exactly what we want for localhost).
+ */
+const COOKIE_DOMAIN = (() => {
+  const base = process.env.NEXT_PUBLIC_SERVER_URL ?? ''
+  try {
+    const host = new URL(base).hostname
+    // Only set a domain for real hostnames — skip localhost / IPs.
+    if (host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) return undefined
+    return `.${host}`
+  } catch {
+    return undefined
+  }
+})()
+
+/**
  * Sign in via Payload's Local API. On success the JWT returned by
  * `payload.login` is written to the httpOnly `payload-token` cookie so
  * subsequent Server Components / Local API calls resolve the session.
@@ -54,6 +79,7 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     path: '/',
     sameSite: 'lax',
     maxAge: TOKEN_MAX_AGE,
+    domain: COOKIE_DOMAIN,
   })
 
   redirect('/cabinet')
@@ -145,6 +171,7 @@ export async function registerAction(_prev: unknown, formData: FormData) {
       path: '/',
       sameSite: 'lax',
       maxAge: TOKEN_MAX_AGE,
+      domain: COOKIE_DOMAIN,
     })
   }
 
@@ -162,6 +189,7 @@ export async function logoutAction() {
     secure: IS_HTTPS,
     path: '/',
     sameSite: 'lax',
+    domain: COOKIE_DOMAIN,
     maxAge: 0,
     expires: new Date(0),
   })

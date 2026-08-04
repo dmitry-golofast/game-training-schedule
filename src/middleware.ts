@@ -1,22 +1,27 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
- * Two independent guards share this single middleware file:
+ * Three guards share this single middleware file:
  *
- * 1) /login & /register → redirect to the `app` subdomain.
+ * 1) /login & /register → app subdomain + logged-in shortcut.
  *    The landing lives on the apex domain (eventfit.ru), but auth flows live
- *    on app.eventfit.ru. Opening an auth route on the apex domain bounces to
- *    the same path on `app.` so the session cookie is scoped to one host.
+ *    on app.eventfit.ru. Anonymous visitors on the apex domain are bounced
+ *    to the app subdomain (same path). Visitors who already hold a session
+ *    skip the auth pages entirely and land on /cabinet.
  *
  * 2) /admin → reject anyone who is not an `admin`.
  *    Payload still mints a `payload-token` for ANY authenticated user of the
- *    `users` collection (students, parents, trainers), which lets them reach
- *    `/admin` and even see the panel chrome. This guard reads the role from
- *    the JWT in `payload-token` and hard-redirects non-admins (and
- *    unauthenticated visitors) to the home page of whichever host served the
- *    request — without touching the session cookie:
+ *    `users` collection (students, parents, trainers). This guard reads the
+ *    role from the JWT and hard-redirects non-admins to the home page of
+ *    whichever host served the request — without touching the session cookie:
  *      eventfit.ru/admin       → eventfit.ru/
  *      app.eventfit.ru/admin   → app.eventfit.ru/
+ *
+ * 3) / on the app subdomain → route by auth state.
+ *    The app-subdomain root used to be force-redirected to /login by nginx
+ *    (even for logged-in users). nginx now proxies it here, and this guard
+ *    sends logged-in users to /cabinet and anonymous users to /login.
+ *    The apex-domain root (eventfit.ru/) is the landing and is left alone.
  *
  * NOTE on ports: Next.js runs on port 3000 inside the container and nginx
  * proxies to it, so `request.url` carries `:3000`. Redirects MUST be built
@@ -26,19 +31,49 @@ import { NextResponse, type NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
 
+  // ── Guard 3: app-subdomain root → route by auth state ────────
+  // On app.eventfit.ru the root path used to be force-redirected to /login
+  // by nginx, even for logged-in users. nginx now proxies the root through
+  // to Next.js, and this guard sends logged-in users to /cabinet and
+  // anonymous users to /login.
+  if (pathname === '/') {
+    return guardAppRoot(request)
+  }
+
   // ── Guard 2: admin panel access control ──────────────────────
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     return guardAdmin(request)
   }
 
-  // ── Guard 1: auth routes → app subdomain ─────────────────────
+  // ── Guard 1: auth routes → app subdomain / cabinet ───────────
   return guardAuthSubdomain(request, pathname, search)
 }
 
 export const config = {
-  // Run for auth routes and everything under /admin (including /admin/login,
-  // which the admin guard lets through so admins can sign in).
-  matcher: ['/login', '/register', '/admin', '/admin/:path*'],
+  // Run for: root, auth routes, and everything under /admin.
+  matcher: ['/', '/login', '/register', '/admin', '/admin/:path*'],
+}
+
+// ── Guard 3: app-subdomain root ─────────────────────────────────
+
+function guardAppRoot(request: NextRequest) {
+  // This guard only applies on the app subdomain — the apex domain's root
+  // is the landing page and must render normally for everyone.
+  const currentHost = resolveRequestHost(request)
+  const appHost = resolveAppHost()
+  if (appHost && currentHost !== appHost) {
+    return NextResponse.next()
+  }
+
+  // On the app subdomain: logged-in → /cabinet, anonymous → /login.
+  // Cookie domain is now shared across subdomains (see actions.ts), so a
+  // session established on eventfit.ru is visible here too.
+  const token = request.cookies.get('payload-token')?.value
+  const role = token ? getRoleFromToken(token) : null
+  const loggedIn = Boolean(role) // any valid role means "has a session"
+
+  const dest = loggedIn ? '/cabinet' : '/login'
+  return NextResponse.redirect(publicOrigin(request, dest))
 }
 
 // ── Guard 2: admin panel ────────────────────────────────────────
@@ -100,16 +135,28 @@ function guardAuthSubdomain(request: NextRequest, pathname: string, search: stri
     return NextResponse.next()
   }
 
-  // Already on the app subdomain — nothing to do (prevents a redirect loop).
-  if (currentHost === appHost) {
-    return NextResponse.next()
+  const proto = resolveRequestProto(request)
+
+  // If the visitor already has a session (cookie is now shared across
+  // subdomains), send them straight to the cabinet instead of showing the
+  // login/register form. Applies on both the apex domain and the app
+  // subdomain — no point showing auth pages to someone already logged in.
+  const token = request.cookies.get('payload-token')?.value
+  const role = token ? getRoleFromToken(token) : null
+  if (role) {
+    const target = new URL('/cabinet', `${proto}//${appHost}`)
+    return NextResponse.redirect(target, 307)
   }
 
-  // Build the redirect URL from the public-facing host/protocol so the
-  // internal container port (:3000) never leaks into the Location header.
-  const proto = resolveRequestProto(request)
-  const target = new URL(`${pathname}${search}`, `${proto}//${appHost}`)
-  return NextResponse.redirect(target, 307)
+  // Anonymous visitor on the apex domain → bounce to the app subdomain
+  // (same path + query) so the cookie is scoped consistently.
+  if (currentHost !== appHost) {
+    const target = new URL(`${pathname}${search}`, `${proto}//${appHost}`)
+    return NextResponse.redirect(target, 307)
+  }
+
+  // Already on the app subdomain and anonymous → render the auth page.
+  return NextResponse.next()
 }
 
 // ── Helpers: public-facing origin (no internal port) ────────────
