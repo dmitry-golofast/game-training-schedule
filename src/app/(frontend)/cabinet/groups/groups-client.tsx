@@ -359,15 +359,16 @@ export function GroupsClient({ groups, students }: { groups: Group[]; students: 
 
   return (
     <>
-      {/* Toolbar: view switcher + create button. */}
+      {/* Toolbar: view switcher + create button. On mobile the create button
+          collapses to an icon so the whole row fits a narrow screen. */}
       <div className="flex items-center justify-between gap-2">
         <ViewToggle value={view} onChange={setView} />
 
         <Dialog open={creating} onOpenChange={setCreating}>
           <DialogTrigger asChild>
-            <Button>
+            <Button size="icon" className="sm:size-auto sm:gap-1.5" aria-label="Создать группу">
               <PlusIcon />
-              Создать группу
+              <span className="sr-only sm:not-sr-only">Создать группу</span>
             </Button>
           </DialogTrigger>
           <DialogContent>
