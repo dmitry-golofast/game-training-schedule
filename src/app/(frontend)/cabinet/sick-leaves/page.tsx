@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 
 import { SickLeavesClient } from '@/app/(frontend)/cabinet/sick-leaves/sick-leaves-client'
 import { SubmitSickLeaveDialog } from '@/app/(frontend)/cabinet/sick-leaves/submit-sick-leave-dialog'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
-import { formatInTz } from '@/lib/timezone'
+import { formatInTz, getUserTimezoneFromCookie } from '@/lib/timezone'
 import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Больничные' }
@@ -115,7 +116,8 @@ export default async function SickLeavesPage() {
         overrideAccess: true,
         depth: 0,
       })
-      const tz = me.timezone || 'UTC'
+      const cookieStore = await cookies()
+      const tz = getUserTimezoneFromCookie(cookieStore.get('tz')?.value, me.timezone)
       upcomingSlots = slotsResult.docs.map((s) => ({
         id: s.id,
         startAt: s.startAt,

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 
 import { GroupsClient } from '@/app/(frontend)/cabinet/groups/groups-client'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
 import { isAdminLike } from '@/lib/roles'
 
@@ -13,6 +13,9 @@ type GroupItem = {
   name: string
   description?: string | null
   members: StudentRef[]
+  imageUrl?: string | null
+  imageAlt?: string | null
+  imageId?: string | null
 }
 
 export default async function GroupsPage() {
@@ -42,18 +45,31 @@ export default async function GroupsPage() {
     email: s.email,
   }))
 
-  const groups: GroupItem[] = groupsResult.docs.map((g) => ({
-    id: g.id,
-    name: g.name,
-    description: g.description ?? null,
-    members: (g.members ?? [])
-      .map((m) =>
-        typeof m === 'object' && m !== null
-          ? { id: m.id, name: m.name || m.email, email: m.email }
-          : null,
-      )
-      .filter((m): m is StudentRef => m !== null),
-  }))
+  const groups: GroupItem[] = groupsResult.docs.map((g) => {
+    // `preview` is an upload relationship; at depth 1 Payload populates it as
+    // the media document (with `url`/`alt`). It may also be a string id or
+    // absent entirely.
+    const preview =
+      g.preview && typeof g.preview === 'object'
+        ? { url: g.preview.url ?? null, alt: g.preview.alt ?? null, id: String(g.preview.id) }
+        : null
+
+    return {
+      id: g.id,
+      name: g.name,
+      description: g.description ?? null,
+      members: (g.members ?? [])
+        .map((m) =>
+          typeof m === 'object' && m !== null
+            ? { id: m.id, name: m.name || m.email, email: m.email }
+            : null,
+        )
+        .filter((m): m is StudentRef => m !== null),
+      imageUrl: preview?.url ?? null,
+      imageAlt: preview?.alt ?? null,
+      imageId: preview?.id ?? null,
+    }
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,46 +85,7 @@ export default async function GroupsPage() {
             <CardDescription>Создайте первую группу кнопкой выше.</CardDescription>
           </CardHeader>
         </Card>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {groups.map((group) => (
-            <Card key={group.id}>
-              <CardContent className="flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <h3 className="font-semibold">{group.name}</h3>
-                    {group.description ? (
-                      <p className="text-xs text-muted-foreground">{group.description}</p>
-                    ) : null}
-                  </div>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                    {group.members.length} уч.
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {group.members.length === 0 ? (
-                    <span className="text-xs text-muted-foreground">нет участников</span>
-                  ) : (
-                    group.members.slice(0, 8).map((m) => (
-                      <span
-                        key={m.id}
-                        className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
-                      >
-                        {m.name}
-                      </span>
-                    ))
-                  )}
-                  {group.members.length > 8 ? (
-                    <span className="text-xs text-muted-foreground">
-                      +{group.members.length - 8}
-                    </span>
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      ) : null}
 
       <GroupsClient groups={groups} students={students} />
     </div>

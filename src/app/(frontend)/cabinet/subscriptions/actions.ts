@@ -8,6 +8,45 @@ import { isAdminLike } from '@/lib/roles'
 type ActionResult = { success: true } | { success: false; error: string }
 
 /**
+ * If `formData` carries a non-empty `image` file, upload it into the `media`
+ * collection and return the new media document id. Returns null when no file
+ * was attached (so the caller can skip touching the `image` field).
+ *
+ * Mirrors the upload pattern in `documents-actions.ts`: the Local API accepts
+ * a Buffer + mimetype + name + size via the `file` option.
+ */
+async function uploadImageFile(
+  formData: FormData,
+  alt: string,
+): Promise<{ id: string } | { error: string } | null> {
+  const file = formData.get('image')
+  if (!(file instanceof File) || file.size === 0) return null
+
+  const payload = await getPayloadClient()
+  try {
+    const arrayBuffer = await file.arrayBuffer()
+    const created = await payload.create({
+      collection: 'media',
+      overrideAccess: true,
+      data: { alt: alt || file.name },
+      file: {
+        data: Buffer.from(arrayBuffer),
+        mimetype: file.type || 'image/*',
+        name: file.name,
+        size: file.size,
+      },
+    })
+    if (!created?.id) {
+      return { error: 'Не удалось загрузить картинку.' }
+    }
+    return { id: String(created.id) }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { error: `Ошибка загрузки картинки. ${message}` }
+  }
+}
+
+/**
  * Admin-only: create a subscription template (catalog entry).
  */
 export async function createTemplateAction(
@@ -42,6 +81,11 @@ export async function createTemplateAction(
     return { success: false, error: 'Срок действия должен быть больше 0.' }
   }
 
+  const imageResult = await uploadImageFile(formData, title)
+  if (imageResult && 'error' in imageResult) {
+    return { success: false, error: imageResult.error }
+  }
+
   const payload = await getPayloadClient()
   try {
     await payload.create({
@@ -54,6 +98,7 @@ export async function createTemplateAction(
         price,
         durationDays,
         notes: notes || undefined,
+        ...(imageResult ? { image: imageResult.id } : {}),
       },
     })
   } catch (err) {
@@ -101,6 +146,13 @@ export async function updateTemplateAction(
     return { success: false, error: 'Срок действия должен быть больше 0.' }
   }
 
+  // Upload a new preview only when a file is attached. When no file is sent,
+  // we leave the existing `image` untouched (Payload keeps the prior value).
+  const imageResult = await uploadImageFile(formData, title)
+  if (imageResult && 'error' in imageResult) {
+    return { success: false, error: imageResult.error }
+  }
+
   const payload = await getPayloadClient()
   try {
     await payload.update({
@@ -114,6 +166,7 @@ export async function updateTemplateAction(
         price,
         durationDays,
         notes: notes || undefined,
+        ...(imageResult ? { image: imageResult.id } : {}),
       },
     })
   } catch (err) {

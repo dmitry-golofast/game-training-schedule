@@ -5,7 +5,6 @@ import { DocumentsSection } from '@/app/(frontend)/cabinet/profile/documents-sec
 import { PaymentHistory } from '@/app/(frontend)/cabinet/profile/payment-history'
 import { ChildrenSection } from '@/app/(frontend)/cabinet/profile/children-section'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
-import { timezoneLabel } from '@/lib/timezone'
 import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Профиль' }
@@ -166,8 +165,6 @@ export default async function ProfilePage() {
                     : 'Ученик'
             }
           />
-          <Separator />
-          <Row label="Часовой пояс" value={me.timezone ? timezoneLabel(me.timezone) : '—'} />
         </CardContent>
       </Card>
 
@@ -258,14 +255,11 @@ export default async function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle>Настройки</CardTitle>
-          <CardDescription>
-            Имя для отображения, часовой пояс расписания и напоминания.
-          </CardDescription>
+          <CardDescription>Имя для отображения и напоминания.</CardDescription>
         </CardHeader>
         <CardContent>
           <PreferencesForm
             name={me.name ?? null}
-            timezone={me.timezone ?? null}
             reminderLeadHours={typeof me.reminderLeadHours === 'number' ? me.reminderLeadHours : 24}
           />
         </CardContent>

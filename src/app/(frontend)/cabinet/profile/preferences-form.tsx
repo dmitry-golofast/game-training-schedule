@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { COMMON_TIMEZONES } from '@/lib/timezone'
 
 const REMINDER_OPTIONS = [0, 1, 2, 3, 6, 12, 24, 48, 72] as const
 
@@ -30,14 +29,10 @@ function SubmitButton() {
 
 export function PreferencesForm({
   name,
-  timezone,
   reminderLeadHours,
-  detectedTimezone,
 }: {
   name: string | null
-  timezone: string | null
   reminderLeadHours: number
-  detectedTimezone?: string
 }) {
   const [state, dispatch] = useActionState(updateProfileAction, undefined)
 
@@ -62,38 +57,6 @@ export function PreferencesForm({
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="pref-tz">Часовой пояс</Label>
-        <Select name="timezone" defaultValue={timezone || 'UTC'}>
-          <SelectTrigger id="pref-tz" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {COMMON_TIMEZONES.map((tz) => (
-              <SelectItem key={tz} value={tz}>
-                {tz}
-              </SelectItem>
-            ))}
-            {/* Allow arbitrary zones not in the common list (e.g. autodetected). */}
-            {timezone &&
-            !COMMON_TIMEZONES.includes(timezone as (typeof COMMON_TIMEZONES)[number]) ? (
-              <SelectItem value={timezone}>{timezone}</SelectItem>
-            ) : null}
-          </SelectContent>
-        </Select>
-        {detectedTimezone && detectedTimezone !== (timezone || 'UTC') ? (
-          <button
-            type="button"
-            className="text-left text-xs text-primary hover:underline"
-            // The Select above is Radix-controlled; switching happens on the server save.
-            title="Выберите этот часовой пояс из списка"
-          >
-            Браузер определяет: {detectedTimezone}
-          </button>
-        ) : null}
-        <p className="text-xs text-muted-foreground">Время расписания отображается в этом поясе.</p>
-      </div>
-
-      <div className="flex flex-col gap-2">
         <Label htmlFor="pref-reminder">Напоминание перед тренировкой</Label>
         <Select name="reminderLeadHours" defaultValue={String(reminderLeadHours)}>
           <SelectTrigger id="pref-reminder" className="w-full">
@@ -107,6 +70,9 @@ export function PreferencesForm({
             ))}
           </SelectContent>
         </Select>
+        <p className="text-xs text-muted-foreground">
+          Часовой пояс определяется автоматически по браузеру.
+        </p>
       </div>
 
       <div>

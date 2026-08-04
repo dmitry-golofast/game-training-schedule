@@ -331,6 +331,10 @@ export interface Group {
    */
   members?: (string | User)[] | null;
   description?: string | null;
+  /**
+   * Картинка-превью группы для режима карточек.
+   */
+  preview?: (string | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -377,6 +381,10 @@ export interface SubscriptionTemplate {
    * Название абонемента (например: «Индивидуальный 8 занятий»).
    */
   title: string;
+  /**
+   * Превью абонемента (картинка). Отображается в виде карточек.
+   */
+  image?: (string | null) | Media;
   kind: 'individual' | 'group';
   /**
    * Сколько занятий входит в абонемент.
@@ -874,6 +882,7 @@ export interface GroupsSelect<T extends boolean = true> {
   name?: T;
   members?: T;
   description?: T;
+  preview?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -900,6 +909,7 @@ export interface SubscriptionsSelect<T extends boolean = true> {
  */
 export interface SubscriptionTemplatesSelect<T extends boolean = true> {
   title?: T;
+  image?: T;
   kind?: T;
   totalCredits?: T;
   price?: T;

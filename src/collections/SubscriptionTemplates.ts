@@ -18,7 +18,15 @@ export const SubscriptionTemplates: CollectionConfig = {
   slug: 'subscription-templates',
   admin: {
     group: 'Cabinet',
-    defaultColumns: ['title', 'kind', 'totalCredits', 'price', 'durationDays', 'updatedAt'],
+    defaultColumns: [
+      'title',
+      'kind',
+      'totalCredits',
+      'price',
+      'durationDays',
+      'image',
+      'updatedAt',
+    ],
   },
   access: {
     read: () => true,
@@ -32,6 +40,14 @@ export const SubscriptionTemplates: CollectionConfig = {
       type: 'text',
       required: true,
       admin: { description: 'Название абонемента (например: «Индивидуальный 8 занятий»).' },
+    },
+    {
+      name: 'image',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description: 'Превью абонемента (картинка). Отображается в виде карточек.',
+      },
     },
     {
       name: 'kind',

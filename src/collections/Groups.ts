@@ -13,7 +13,7 @@ export const Groups: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     group: 'Cabinet',
-    defaultColumns: ['name', 'members', 'updatedAt'],
+    defaultColumns: ['name', 'preview', 'members', 'updatedAt'],
   },
   access: {
     read: ({ req: { user } }) => isAdminLike(user?.role),
@@ -42,6 +42,14 @@ export const Groups: CollectionConfig = {
     {
       name: 'description',
       type: 'textarea',
+    },
+    {
+      name: 'preview',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description: 'Картинка-превью группы для режима карточек.',
+      },
     },
   ],
 }

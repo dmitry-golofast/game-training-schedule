@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import * as React from 'react'
 
 import { CabinetShell } from '@/components/cabinet/cabinet-shell'
+import { TimezoneSync } from '@/components/cabinet/timezone-sync'
 import { getCurrentUser } from '@/lib/payload'
 
 /**
@@ -16,5 +17,10 @@ export default async function CabinetLayout(props: { children: React.ReactNode }
     redirect('/login')
   }
 
-  return <CabinetShell user={user}>{props.children}</CabinetShell>
+  return (
+    <CabinetShell user={user}>
+      <TimezoneSync storedTimezone={user.timezone ?? null} />
+      {props.children}
+    </CabinetShell>
+  )
 }

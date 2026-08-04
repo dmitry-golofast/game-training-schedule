@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 
 import { ScheduleView } from '@/app/(frontend)/cabinet/schedule/schedule-view'
 import { toGridSlot, type GroupRef, type Student } from '@/app/(frontend)/cabinet/schedule/types'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { type ScheduleView as ViewMode, parseISODateComponents } from '@/lib/datetime'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
-import { getViewBoundsInTz, getUserTimezone, wallClockToUtc } from '@/lib/timezone'
+import { getViewBoundsInTz, getUserTimezoneFromCookie, wallClockToUtc } from '@/lib/timezone'
 import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Расписание' }
@@ -24,7 +25,11 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
   const view: ViewMode = VALID_VIEWS.has(sp.view as ViewMode) ? (sp.view as ViewMode) : 'day'
 
   // The viewer's timezone drives both the query bounds and the rendering.
-  const tz = getUserTimezone(me.timezone)
+  // Prefer the browser-detected `tz` cookie (set by TimezoneSync) so the
+  // schedule renders in the right zone on the first request; fall back to the
+  // persisted user.timezone, then UTC.
+  const cookieStore = await cookies()
+  const tz = getUserTimezoneFromCookie(cookieStore.get('tz')?.value, me.timezone)
 
   // Resolve cursor date.
   //

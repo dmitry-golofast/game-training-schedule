@@ -431,7 +431,7 @@ function AssignSubscriptionDialog({
         <form
           action={formAction}
           onSubmit={() => startTransition(() => {})}
-          className="flex flex-col gap-4"
+          className="flex min-w-0 flex-col gap-4"
         >
           <input type="hidden" name="studentId" value={studentId} />
           <input type="hidden" name="templateId" value={templateId} />
@@ -442,11 +442,15 @@ function AssignSubscriptionDialog({
               <SelectTrigger id="assign-template" className="w-full">
                 <SelectValue placeholder="Выберите шаблон" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[90vw] sm:max-w-md">
                 {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.title} · {t.totalCredits} зан. ({t.kind === 'group' ? 'групп.' : 'индивид.'})
-                    {t.durationDays ? ` · ${t.durationDays} дн.` : ''}
+                  <SelectItem
+                    key={t.id}
+                    value={t.id}
+                    className="text-balance break-words whitespace-normal"
+                  >
+                    {t.title} — {t.totalCredits} зан.
+                    {t.durationDays ? `, ${t.durationDays} дн.` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -472,7 +476,8 @@ function AssignSubscriptionDialog({
                 name="validUntil"
                 type="date"
                 value={validUntil}
-                defaultValue={validUntil}
+                readOnly
+                aria-readonly="true"
                 required
               />
             </div>

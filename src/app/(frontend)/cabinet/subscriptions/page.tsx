@@ -15,18 +15,32 @@ export default async function SubscriptionsPage() {
     collection: 'subscription-templates',
     sort: 'title',
     limit: 200,
+    depth: 1,
     overrideAccess: true,
   })
 
-  const templates = result.docs.map((t) => ({
-    id: t.id,
-    title: t.title,
-    kind: t.kind,
-    totalCredits: t.totalCredits,
-    price: t.price ?? null,
-    durationDays: t.durationDays ?? null,
-    notes: t.notes ?? null,
-  }))
+  const templates = result.docs.map((t) => {
+    // `image` is an upload relationship; at depth 1 Payload populates it as
+    // the media document (with `url`/`alt`). It may also be a string id or
+    // absent entirely.
+    const img =
+      t.image && typeof t.image === 'object'
+        ? { url: t.image.url ?? null, alt: t.image.alt ?? null, id: String(t.image.id) }
+        : null
+
+    return {
+      id: t.id,
+      title: t.title,
+      kind: t.kind,
+      totalCredits: t.totalCredits,
+      price: t.price ?? null,
+      durationDays: t.durationDays ?? null,
+      notes: t.notes ?? null,
+      imageUrl: img?.url ?? null,
+      imageAlt: img?.alt ?? null,
+      imageId: img?.id ?? null,
+    }
+  })
 
   return (
     <div className="flex flex-col gap-6">

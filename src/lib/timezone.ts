@@ -10,25 +10,6 @@
 /** Default timezone when none is configured on the user. */
 export const DEFAULT_TIMEZONE = 'UTC'
 
-/** Common IANA timezones offered in the profile UI. */
-export const COMMON_TIMEZONES = [
-  'UTC',
-  'Europe/Kaliningrad',
-  'Europe/Moscow',
-  'Europe/Samara',
-  'Asia/Yekaterinburg',
-  'Asia/Omsk',
-  'Asia/Novosibirsk',
-  'Asia/Irkutsk',
-  'Asia/Yakutsk',
-  'Asia/Vladivostok',
-  'Europe/London',
-  'Europe/Berlin',
-  'America/New_York',
-  'America/Chicago',
-  'America/Los_Angeles',
-] as const
-
 /** Resolve a user's timezone, falling back to UTC. */
 export function getUserTimezone(timezone?: string | null): string {
   if (!timezone) return DEFAULT_TIMEZONE
@@ -39,6 +20,30 @@ export function getUserTimezone(timezone?: string | null): string {
   } catch {
     return DEFAULT_TIMEZONE
   }
+}
+
+/**
+ * Resolve the viewer's timezone for UI rendering (schedule, sick-leaves, …).
+ *
+ * The browser-detected zone is written to the `tz` cookie by the `TimezoneSync`
+ * client component, so server components can read it on the very first render
+ * (before the detected value has been persisted onto the user record). When the
+ * cookie is absent or invalid we fall back to the stored `user.timezone`, then
+ * UTC.
+ */
+export function getUserTimezoneFromCookie(
+  cookieTz: string | undefined | null,
+  userTz?: string | null,
+): string {
+  if (cookieTz) {
+    try {
+      Intl.DateTimeFormat('en', { timeZone: cookieTz })
+      return cookieTz
+    } catch {
+      // ignore invalid cookie value, fall through
+    }
+  }
+  return getUserTimezone(userTz)
 }
 
 /** Format a UTC instant as a wall-clock string in the given timezone. */

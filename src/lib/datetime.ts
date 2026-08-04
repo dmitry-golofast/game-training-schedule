@@ -11,11 +11,11 @@
 /** Grid granularity, minutes. */
 export const SLOT_STEP_MIN = 30
 
-/** First row of the working day (inclusive), 24h. */
-export const DAY_START_HOUR = 8
+/** First row of the day (inclusive), 24h. Full 24-hour grid starting at 00:00. */
+export const DAY_START_HOUR = 0
 
-/** End boundary of the working day (exclusive), 24h. */
-export const DAY_END_HOUR = 22
+/** End boundary of the day (exclusive), 24h. Full 24-hour grid through 24:00. */
+export const DAY_END_HOUR = 24
 
 /** Row height in the grid (px). Keep in sync with the grid component. */
 export const ROW_HEIGHT_PX = 48

@@ -2,7 +2,7 @@
 
 import { AlertCircleIcon, CalendarPlusIcon, RepeatIcon } from 'lucide-react'
 import { AttendanceDialog } from '@/app/(frontend)/cabinet/schedule/attendance-dialog'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { SlotDialog } from '@/app/(frontend)/cabinet/schedule/slot-dialog'
 import {
@@ -60,6 +60,13 @@ function rowIndexInTz(instant: Date, tz: string): number | null {
   return minutesFromStart / SLOT_STEP_MIN
 }
 
+/** True when `instant` falls on the same calendar day (in `tz`) as `day`. */
+function isSameDayInTz(day: Date, instant: Date, tz: string): boolean {
+  const a = formatTzParts(day, tz)
+  const b = formatTzParts(instant, tz)
+  return a.year === b.year && a.month === b.month && a.day === b.day
+}
+
 export function DayView({ day, timezone, slots, students, groups, canEdit }: DayViewProps) {
   const timeSlots = useMemo(() => buildTimeSlotsInTz(day, timezone), [day, timezone])
 
@@ -67,6 +74,32 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
     open: false,
     data: emptyDialogData(timeSlots[0]?.startAt ?? new Date()),
   })
+
+  // Live "now" — re-rendered every minute so the now-line stays accurate.
+  const [nowTick, setNowTick] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Scroll container ref — the grid scrolls internally on large screens.
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  const now = new Date(nowTick)
+  const isToday = isSameDayInTz(day, now, timezone)
+  const nowRowIndex = rowIndexInTz(now, timezone)
+
+  // Auto-scroll the grid to the current time when today is open. Runs once per
+  // `day` change (and once on mount); a minute-level refresh does not rescroll.
+  useEffect(() => {
+    if (!isToday) return
+    const el = scrollRef.current
+    if (!el) return
+    const row = rowIndexInTz(new Date(), timezone)
+    if (row === null) return
+    const target = row * ROW_HEIGHT_PX - el.clientHeight / 2 + ROW_HEIGHT_PX / 2
+    el.scrollTop = Math.max(0, target)
+  }, [day, timezone])
 
   const openCreate = (startAt: Date) => {
     setDialog({
@@ -122,10 +155,13 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
         </div>
       ) : null}
 
-      <div className="relative overflow-hidden rounded-lg border border-border">
+      <div
+        ref={scrollRef}
+        className="relative overflow-hidden rounded-lg border border-border lg:max-h-[70vh] lg:overflow-y-auto"
+      >
         <div className="flex">
-          {/* Time-axis column */}
-          <div className="w-16 shrink-0 bg-muted/30">
+          {/* Time-axis column (with a "now" marker dot when today is open) */}
+          <div className="relative w-16 shrink-0 bg-muted/30">
             {timeSlots.map((slot) => (
               <div
                 key={slot.label}
@@ -135,6 +171,13 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
                 {slot.label}
               </div>
             ))}
+            {isToday && nowRowIndex !== null ? (
+              <div
+                className="absolute right-0 z-30 size-2 -translate-y-1/2 rounded-full bg-red-500 ring-2 ring-background"
+                style={{ top: nowRowIndex * ROW_HEIGHT_PX }}
+                aria-hidden
+              />
+            ) : null}
           </div>
 
           {/* Grid body: clickable empty rows + absolutely positioned slot blocks */}
@@ -245,6 +288,17 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
                 </div>
               )
             })}
+
+            {/* Current-time indicator: a red horizontal line across the grid. */}
+            {isToday && nowRowIndex !== null ? (
+              <div
+                className="pointer-events-none absolute inset-x-0 z-20 flex items-center"
+                style={{ top: nowRowIndex * ROW_HEIGHT_PX }}
+                aria-hidden
+              >
+                <div className="h-px w-full bg-red-500" />
+              </div>
+            ) : null}
 
             {slots.length === 0 ? (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">

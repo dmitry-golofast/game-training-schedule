@@ -1,6 +1,6 @@
 'use client'
 
-import { PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
+import { ImageIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { useActionState, useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
@@ -9,6 +9,7 @@ import {
   deleteTemplateAction,
   updateTemplateAction,
 } from '@/app/(frontend)/cabinet/subscriptions/actions'
+import { ViewToggle, type ViewMode } from '@/components/cabinet/view-toggle'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -39,6 +40,36 @@ type Template = {
   price?: number | null
   durationDays?: number | null
   notes?: string | null
+  imageUrl?: string | null
+  imageAlt?: string | null
+  imageId?: string | null
+}
+
+/** Shared file input for uploading a preview image into the `media` collection. */
+function ImageInput({
+  currentUrl,
+  currentAlt,
+}: {
+  currentUrl?: string | null
+  currentAlt?: string | null
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor="tpl-image">Превью (картинка)</Label>
+      {currentUrl ? (
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={currentUrl}
+            alt={currentAlt ?? ''}
+            className="size-16 rounded-md border border-border object-cover"
+          />
+          <span className="text-xs text-muted-foreground">Заменить картинку:</span>
+        </div>
+      ) : null}
+      <Input id="tpl-image" name="image" type="file" accept="image/*" />
+    </div>
+  )
 }
 
 /** Create form: template fields only (no student, no dates). */
@@ -72,6 +103,8 @@ function CreateForm({ onDone }: { onDone: () => void }) {
           required
         />
       </div>
+
+      <ImageInput />
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="tpl-kind">Тип</Label>
@@ -170,6 +203,8 @@ function EditForm({ initial, onDone }: { initial: Template; onDone: () => void }
           <Label htmlFor="edit-title">Название</Label>
           <Input id="edit-title" name="title" defaultValue={initial.title} required />
         </div>
+
+        <ImageInput currentUrl={initial.imageUrl} currentAlt={initial.imageAlt} />
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="edit-kind">Тип</Label>
@@ -279,6 +314,95 @@ function EditForm({ initial, onDone }: { initial: Template; onDone: () => void }
   )
 }
 
+/** Inline textual content shared between cards and list views. */
+function CardBody({ tpl }: { tpl: Template }) {
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <span className="line-clamp-2 leading-tight font-semibold">{tpl.title}</span>
+        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+          {tpl.kind === 'group' ? 'Групповой' : 'Индивид.'}
+        </span>
+      </div>
+      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        <span>{tpl.totalCredits} занятий</span>
+        {tpl.price != null ? <span>{tpl.price} ₽</span> : null}
+        {tpl.durationDays ? <span>{tpl.durationDays} дн.</span> : null}
+      </div>
+      {tpl.notes ? (
+        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{tpl.notes}</p>
+      ) : null}
+    </>
+  )
+}
+
+/** Card view: preview on top, content below. `h-full` keeps cards in the same
+ *  grid row equal height regardless of notes length. When `interactive` is
+ *  set the card shows hover/focus affordances consistent with the groups UI. */
+function GridCard({ tpl, interactive = false }: { tpl: Template; interactive?: boolean }) {
+  return (
+    <div
+      className={[
+        'flex h-full flex-col overflow-hidden rounded-lg border bg-card',
+        interactive
+          ? 'border-border transition group-hover/tpl:border-primary/50 group-hover/tpl:shadow-md'
+          : 'border-border',
+      ].join(' ')}
+    >
+      <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-muted">
+        {tpl.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={tpl.imageUrl}
+            alt={tpl.imageAlt ?? tpl.title}
+            loading="lazy"
+            className="size-full object-cover transition group-hover/tpl:scale-[1.02]"
+          />
+        ) : (
+          <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
+            <ImageIcon className="size-10 opacity-40" />
+          </div>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col p-3">
+        <CardBody tpl={tpl} />
+      </div>
+    </div>
+  )
+}
+
+/** Compact list row: small thumbnail on the left, content on the right.
+ *  Mirrors the row style used for groups for visual consistency. */
+function ListRow({ tpl, interactive = false }: { tpl: Template; interactive?: boolean }) {
+  return (
+    <div
+      className={[
+        'flex items-center gap-3 rounded-md border bg-card p-3',
+        interactive
+          ? 'border-border transition group-hover/tpl:border-primary/50 group-hover/tpl:bg-accent/40'
+          : 'border-border',
+      ].join(' ')}
+    >
+      {tpl.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={tpl.imageUrl}
+          alt={tpl.imageAlt ?? tpl.title}
+          loading="lazy"
+          className="size-12 shrink-0 rounded-md object-cover"
+        />
+      ) : (
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground">
+          <ImageIcon className="size-5 opacity-60" />
+        </div>
+      )}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <CardBody tpl={tpl} />
+      </div>
+    </div>
+  )
+}
+
 export function SubscriptionsClient({
   templates,
   isAdmin,
@@ -288,11 +412,15 @@ export function SubscriptionsClient({
 }) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<Template | null>(null)
+  const [view, setView] = useState<ViewMode>('cards')
 
   return (
     <div className="flex flex-col gap-4">
-      {isAdmin ? (
-        <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        {/* View toggle: cards (default) / list */}
+        <ViewToggle value={view} onChange={setView} />
+
+        {isAdmin ? (
           <Dialog open={creating} onOpenChange={setCreating}>
             <DialogTrigger asChild>
               <Button>
@@ -308,68 +436,92 @@ export function SubscriptionsClient({
               <CreateForm onDone={() => setCreating(false)} />
             </DialogContent>
           </Dialog>
-        </div>
-      ) : null}
-
-      <div className="grid gap-3">
-        {templates.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Шаблонов пока нет.</p>
         ) : null}
-        {templates.map((tpl) => {
-          const card = (
-            <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{tpl.title}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {tpl.kind === 'group' ? 'Групповой' : 'Индивидуальный'}
+      </div>
+
+      {templates.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Шаблонов пока нет.</p>
+      ) : view === 'cards' ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {templates.map((tpl) => {
+            if (!isAdmin) {
+              return (
+                <div key={tpl.id}>
+                  <GridCard tpl={tpl} />
+                </div>
+              )
+            }
+            return (
+              <Dialog
+                key={tpl.id}
+                open={editing?.id === tpl.id}
+                onOpenChange={(open) => setEditing(open ? tpl : null)}
+              >
+                <div className="group/tpl relative h-full">
+                  <DialogTrigger asChild>
+                    <button
+                      type="button"
+                      className="block size-full cursor-pointer rounded-lg text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      aria-label={`Редактировать «${tpl.title}»`}
+                    >
+                      <GridCard tpl={tpl} interactive />
+                    </button>
+                  </DialogTrigger>
+                  <span className="pointer-events-none absolute top-2 right-2 rounded-md bg-background/90 p-1 text-muted-foreground opacity-0 backdrop-blur transition-opacity group-hover/tpl:opacity-100">
+                    <PencilIcon className="size-4" />
                   </span>
                 </div>
-                <div className="mt-1 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                  <span>{tpl.totalCredits} занятий</span>
-                  {tpl.price != null ? <span>{tpl.price} ₽</span> : null}
-                  {tpl.durationDays ? <span>{tpl.durationDays} дней</span> : null}
-                </div>
-                {tpl.notes ? (
-                  <div className="mt-1 text-xs text-muted-foreground">{tpl.notes}</div>
-                ) : null}
-              </div>
-            </div>
-          )
-
-          if (!isAdmin) {
-            return (
-              <div key={tpl.id}>
-                <div>{card}</div>
-              </div>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Редактирование шаблона</DialogTitle>
+                    <DialogDescription>{tpl.title}</DialogDescription>
+                  </DialogHeader>
+                  <EditForm initial={tpl} onDone={() => setEditing(null)} />
+                </DialogContent>
+              </Dialog>
             )
-          }
-
-          return (
-            <Dialog
-              key={tpl.id}
-              open={editing?.id === tpl.id}
-              onOpenChange={(open) => setEditing(open ? tpl : null)}
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex-1">{card}</div>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <PencilIcon />
-                  </Button>
-                </DialogTrigger>
-              </div>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Редактирование шаблона</DialogTitle>
-                  <DialogDescription>{tpl.title}</DialogDescription>
-                </DialogHeader>
-                <EditForm initial={tpl} onDone={() => setEditing(null)} />
-              </DialogContent>
-            </Dialog>
-          )
-        })}
-      </div>
+          })}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {templates.map((tpl) => {
+            if (!isAdmin) {
+              return (
+                <div key={tpl.id}>
+                  <ListRow tpl={tpl} />
+                </div>
+              )
+            }
+            return (
+              <Dialog
+                key={tpl.id}
+                open={editing?.id === tpl.id}
+                onOpenChange={(open) => setEditing(open ? tpl : null)}
+              >
+                <div className="group/tpl flex items-center gap-2">
+                  <DialogTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex-1 cursor-pointer rounded-md text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      aria-label={`Редактировать «${tpl.title}»`}
+                    >
+                      <ListRow tpl={tpl} interactive />
+                    </button>
+                  </DialogTrigger>
+                  <PencilIcon className="size-4 shrink-0 text-muted-foreground opacity-0 transition group-hover/tpl:opacity-100" />
+                </div>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Редактирование шаблона</DialogTitle>
+                    <DialogDescription>{tpl.title}</DialogDescription>
+                  </DialogHeader>
+                  <EditForm initial={tpl} onDone={() => setEditing(null)} />
+                </DialogContent>
+              </Dialog>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
