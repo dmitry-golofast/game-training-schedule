@@ -366,7 +366,7 @@ export function GroupsClient({ groups, students }: { groups: Group[]; students: 
 
         <Dialog open={creating} onOpenChange={setCreating}>
           <DialogTrigger asChild>
-            <Button size="icon" className="sm:size-auto sm:gap-1.5" aria-label="Создать группу">
+            <Button className="h-9 gap-1.5 px-3 sm:px-4" aria-label="Создать группу">
               <PlusIcon />
               <span className="sr-only sm:not-sr-only">Создать группу</span>
             </Button>
