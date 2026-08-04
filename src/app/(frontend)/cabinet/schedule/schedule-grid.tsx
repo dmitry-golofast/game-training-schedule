@@ -89,16 +89,37 @@ export function DayView({ day, timezone, slots, students, groups, canEdit }: Day
   const isToday = isSameDayInTz(day, now, timezone)
   const nowRowIndex = rowIndexInTz(now, timezone)
 
-  // Auto-scroll the grid to the current time when today is open. Runs once per
-  // `day` change (and once on mount); a minute-level refresh does not rescroll.
+  // Auto-scroll to the current time when today is open. Runs once per `day`
+  // change (and once on mount); a minute-level refresh does not rescroll.
+  // On large screens the grid scrolls internally (overflow-y-auto on `lg`),
+  // so we set `scrollTop` on the container. On mobile the container is not a
+  // scroll context — instead we scroll the window so the now-line lands near
+  // the viewport center.
   useEffect(() => {
     if (!isToday) return
-    const el = scrollRef.current
-    if (!el) return
     const row = rowIndexInTz(new Date(), timezone)
     if (row === null) return
-    const target = row * ROW_HEIGHT_PX - el.clientHeight / 2 + ROW_HEIGHT_PX / 2
-    el.scrollTop = Math.max(0, target)
+
+    const el = scrollRef.current
+    if (!el) return
+
+    const isDesktopScroll = el.scrollHeight > el.clientHeight && el.clientHeight > 0
+    if (isDesktopScroll) {
+      const target = row * ROW_HEIGHT_PX - el.clientHeight / 2 + ROW_HEIGHT_PX / 2
+      el.scrollTop = Math.max(0, target)
+      return
+    }
+
+    // Mobile: scroll the page so the now-line is roughly centered in the
+    // viewport. `getBoundingClientRect` accounts for the sticky header and
+    // the current scroll offset. Deferred to the next frame so layout is
+    // settled (slots/headers rendered) before measuring.
+    const raf = requestAnimationFrame(() => {
+      const nowLineTopInDoc = el.getBoundingClientRect().top + window.scrollY + row * ROW_HEIGHT_PX
+      const target = nowLineTopInDoc - window.innerHeight / 2 + ROW_HEIGHT_PX / 2
+      window.scrollTo({ top: Math.max(0, target), behavior: 'auto' })
+    })
+    return () => cancelAnimationFrame(raf)
   }, [day, timezone])
 
   const openCreate = (startAt: Date) => {
