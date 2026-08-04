@@ -9,21 +9,26 @@ import { NextResponse, type NextRequest } from 'next/server'
  *    the same path on `app.` so the session cookie is scoped to one host.
  *
  * 2) /admin → reject anyone who is not an `admin`.
- *    Payload's `admin.access.admin` only hides the panel UI — Payload still
- *    mints a `payload-token` for ANY authenticated user of the `users`
- *    collection (students, parents, trainers), which lets them reach `/admin`
- *    and even see the panel chrome. This guard reads the role from the JWT in
- *    `payload-token` and hard-redirects non-admins (and unauthenticated
- *    visitors) to the home page of whichever host served the request:
+ *    Payload still mints a `payload-token` for ANY authenticated user of the
+ *    `users` collection (students, parents, trainers), which lets them reach
+ *    `/admin` and even see the panel chrome. This guard reads the role from
+ *    the JWT in `payload-token` and hard-redirects non-admins (and
+ *    unauthenticated visitors) to the home page of whichever host served the
+ *    request — without touching the session cookie:
  *      eventfit.ru/admin       → eventfit.ru/
  *      app.eventfit.ru/admin   → app.eventfit.ru/
+ *
+ * NOTE on ports: Next.js runs on port 3000 inside the container and nginx
+ * proxies to it, so `request.url` carries `:3000`. Redirects MUST be built
+ * from the public-facing host/proto headers (see `publicOrigin`) to avoid
+ * leaking the internal port into the browser's URL bar.
  */
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
 
   // ── Guard 2: admin panel access control ──────────────────────
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-    return guardAdmin(request, pathname)
+    return guardAdmin(request)
   }
 
   // ── Guard 1: auth routes → app subdomain ─────────────────────
@@ -38,7 +43,7 @@ export const config = {
 
 // ── Guard 2: admin panel ────────────────────────────────────────
 
-function guardAdmin(request: NextRequest, pathname: string) {
+function guardAdmin(request: NextRequest) {
   const token = request.cookies.get('payload-token')?.value
   const role = token ? getRoleFromToken(token) : null
 
@@ -49,11 +54,10 @@ function guardAdmin(request: NextRequest, pathname: string) {
   }
 
   // Everyone else — non-admins AND unauthenticated visitors — gets bounced
-  // to the home page of whichever host served the request:
-  //   eventfit.ru/admin       → eventfit.ru/
-  //   app.eventfit.ru/admin   → app.eventfit.ru/
-  // `new URL('/', request.url)` preserves the current host and protocol.
-  return NextResponse.redirect(new URL('/', request.url))
+  // to the home page of whichever host served the request. The session
+  // cookie is intentionally left untouched: a logged-in student keeps their
+  // cabinet session, they just can't see the admin panel.
+  return NextResponse.redirect(publicOrigin(request, '/'))
 }
 
 /**
@@ -63,7 +67,7 @@ function guardAdmin(request: NextRequest, pathname: string) {
  * malformed / missing the claim.
  *
  * Payload includes collection fields directly in the JWT payload, so `role`
- * is present as a top-level claim.
+ * is present as a top-level claim (requires `saveToJWT: true` on the field).
  */
 function getRoleFromToken(token: string): string | null {
   try {
@@ -82,10 +86,7 @@ function getRoleFromToken(token: string): string | null {
 // ── Guard 1: auth routes → app subdomain ────────────────────────
 
 function guardAuthSubdomain(request: NextRequest, pathname: string, search: string) {
-  // Host that served this request. Behind nginx we trust x-forwarded-host
-  // (nginx sets `Host`/`proxy_set_header Host $host`), then fall back to the
-  // direct `host` header.
-  const currentHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
+  const currentHost = resolveRequestHost(request)
 
   // Skip local development hosts — never redirect when running locally.
   if (isDevHost(currentHost)) {
@@ -104,32 +105,62 @@ function guardAuthSubdomain(request: NextRequest, pathname: string, search: stri
     return NextResponse.next()
   }
 
-  const url = new URL(`${pathname}${search}`, request.url)
-  url.host = appHost
-  // `resolveAppHost` returns only the hostname; the protocol comes from the
-  // env-derived base URL so prod stays on https.
-  const protocol = getAppProtocol()
-  url.protocol = protocol
-  return NextResponse.redirect(url, 307)
+  // Build the redirect URL from the public-facing host/protocol so the
+  // internal container port (:3000) never leaks into the Location header.
+  const proto = resolveRequestProto(request)
+  const target = new URL(`${pathname}${search}`, `${proto}//${appHost}`)
+  return NextResponse.redirect(target, 307)
 }
 
-// ── Helpers ─────────────────────────────────────────────────────
+// ── Helpers: public-facing origin (no internal port) ────────────
+
+/**
+ * The hostname the browser used to reach us, with any port stripped.
+ * Prefers nginx's `x-forwarded-host`, then the `host` header.
+ *
+ * Why: `request.url` and `request.nextUrl.host` carry the in-container port
+ * (3000) because nginx proxies to app:3000. The browser-facing host lives in
+ * the forwarded headers, so redirects built from it won't include :3000.
+ */
+function resolveRequestHost(request: NextRequest): string {
+  const raw = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
+  // Strip the port (e.g. "app.eventfit.ru:443" → "app.eventfit.ru").
+  return raw.split(':')[0].toLowerCase()
+}
+
+/**
+ * The protocol the browser used. Prefers `x-forwarded-proto` (set by nginx
+ * to "https" on the TLS-terminated listener), falls back to the env-derived
+ * protocol, then to "https".
+ */
+function resolveRequestProto(request: NextRequest): string {
+  const xfp = request.headers.get('x-forwarded-proto')
+  if (xfp) return xfp.includes('https') ? 'https:' : 'http:'
+  return getAppProtocol()
+}
+
+/**
+ * Build a redirect URL for the given path using the public-facing host/proto
+ * of the current request — never the internal `request.url` (which leaks
+ * the container port :3000).
+ */
+function publicOrigin(request: NextRequest, path: string): URL {
+  const host = resolveRequestHost(request)
+  const proto = resolveRequestProto(request)
+  return new URL(path, `${proto}//${host}`)
+}
+
+// ── Helpers: dev / app-host resolution ──────────────────────────
 
 /**
  * True for localhost / loopback / private dev IPs — never redirect these.
  */
 function isDevHost(host: string): boolean {
-  // Strip the port if present (localhost:3000, 127.0.0.1:3000).
-  const hostname = host.split(':')[0].toLowerCase()
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
     return true
   }
   // Private network ranges used during local/dev testing.
-  if (
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('10.') ||
-    hostname.startsWith('172.')
-  ) {
+  if (host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.')) {
     return true
   }
   return false
@@ -155,7 +186,7 @@ function resolveAppHost(): string | null {
 
 /**
  * Protocol ("https:" / "http:") derived from NEXT_PUBLIC_SERVER_URL.
- * Falls back to the request's protocol if the env var is missing.
+ * Falls back to "https:" if the env var is missing or unparseable.
  */
 function getAppProtocol(): string {
   const base = process.env.NEXT_PUBLIC_SERVER_URL
