@@ -1,28 +1,108 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
- * Redirect /login and /register to the `app` subdomain.
+ * Two independent guards share this single middleware file:
  *
- * The landing lives on the apex domain (eventfit.ru), but auth flows live on
- * the `app` subdomain (app.eventfit.ru). When a user opens an auth route on
- * the apex domain — e.g. by following an old bookmark — this middleware
- * bounces them to the same path on the `app` subdomain so the session cookie
- * is scoped to a single host (see `actions.ts`, where the cookie is set
- * without an explicit `domain`, binding it to whichever host served the form).
+ * 1) /login & /register → redirect to the `app` subdomain.
+ *    The landing lives on the apex domain (eventfit.ru), but auth flows live
+ *    on app.eventfit.ru. Opening an auth route on the apex domain bounces to
+ *    the same path on `app.` so the session cookie is scoped to one host.
  *
- * Behavior:
- *  - eventfit.ru/login         → 307 https://app.eventfit.ru/login
- *  - eventfit.ru/register      → 307 https://app.eventfit.ru/register
- *  - app.eventfit.ru/login     → no redirect (form submits here)
- *  - localhost / dev IPs       → no redirect (keeps local dev working)
- *  - other paths               → not matched by `matcher`
- *
- * The app host is derived from NEXT_PUBLIC_SERVER_URL (the apex domain): the
- * protocol is preserved and `app.` is prepended to the hostname.
+ * 2) /admin → reject any non-`admin` session.
+ *    Payload's `admin.access.admin` only hides the panel UI — Payload still
+ *    mints a `payload-token` for ANY authenticated user of the `users`
+ *    collection (students, parents, trainers), which lets them reach `/admin`
+ *    and even see the panel chrome. This guard reads the role from the JWT in
+ *    `payload-token` and hard-redirects non-admins to `/admin/login`,
+ *    preventing the panel from ever rendering for them.
  */
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
 
+  // ── Guard 2: admin panel access control ──────────────────────
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    return guardAdmin(request, pathname)
+  }
+
+  // ── Guard 1: auth routes → app subdomain ─────────────────────
+  return guardAuthSubdomain(request, pathname, search)
+}
+
+export const config = {
+  // Run for auth routes and everything under /admin (including /admin/login,
+  // which the admin guard lets through so admins can sign in).
+  matcher: ['/login', '/register', '/admin', '/admin/:path*'],
+}
+
+// ── Guard 2: admin panel ────────────────────────────────────────
+
+function guardAdmin(request: NextRequest, pathname: string) {
+  // Allow the login route itself — users must be able to reach the sign-in
+  // form. Payload's own access control covers the post-login panel view, but
+  // we additionally block already-authenticated non-admins below.
+  if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
+    // Even on the login page, if the visitor already holds a non-admin
+    // session, bouncing them back to the login form is correct — they can
+    // sign out and retry as an admin. But more importantly, don't redirect
+    // someone with no token (the normal "please log in" flow).
+    const token = request.cookies.get('payload-token')?.value
+    if (token && getRoleFromToken(token) !== 'admin') {
+      // Clear the stale token so the login form starts fresh.
+      const res = NextResponse.redirect(new URL('/admin/login', request.url))
+      res.cookies.delete('payload-token')
+      return res
+    }
+    return NextResponse.next()
+  }
+
+  const token = request.cookies.get('payload-token')?.value
+
+  // No session → let Payload show its own login page (redirects to /admin/login).
+  if (!token) {
+    return NextResponse.next()
+  }
+
+  const role = getRoleFromToken(token)
+
+  // Admin → allow through to the panel.
+  if (role === 'admin') {
+    return NextResponse.next()
+  }
+
+  // Non-admin with a session → block. Redirect to /admin/login and strip the
+  // token so the panel can't pick it up. This is the core fix: previously a
+  // student/parent/trainer JWT was enough to enter /admin.
+  const res = NextResponse.redirect(new URL('/admin/login', request.url))
+  res.cookies.delete('payload-token')
+  return res
+}
+
+/**
+ * Decode the Payload JWT (without verifying the signature — that's fine here,
+ * because this is only a UI gate; Payload's own access control is the real
+ * authority server-side). Returns the `role` claim or null if the token is
+ * malformed / missing the claim.
+ *
+ * Payload includes collection fields directly in the JWT payload, so `role`
+ * is present as a top-level claim.
+ */
+function getRoleFromToken(token: string): string | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length < 2) return null
+    // JWT payload is base64url. Convert to base64, then decode.
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const json = Buffer.from(b64, 'base64').toString('utf-8')
+    const payload = JSON.parse(json) as { role?: string }
+    return payload.role ?? null
+  } catch {
+    return null
+  }
+}
+
+// ── Guard 1: auth routes → app subdomain ────────────────────────
+
+function guardAuthSubdomain(request: NextRequest, pathname: string, search: string) {
   // Host that served this request. Behind nginx we trust x-forwarded-host
   // (nginx sets `Host`/`proxy_set_header Host $host`), then fall back to the
   // direct `host` header.
@@ -51,14 +131,7 @@ export function middleware(request: NextRequest) {
   // env-derived base URL so prod stays on https.
   const protocol = getAppProtocol()
   url.protocol = protocol
-  // Rebuild with the new host/protocol. Using NextResponse.redirect keeps
-  // Vercel/standalone happy.
   return NextResponse.redirect(url, 307)
-}
-
-export const config = {
-  // Only run for the auth routes — everything else bypasses middleware.
-  matcher: ['/login', '/register'],
 }
 
 // ── Helpers ─────────────────────────────────────────────────────
