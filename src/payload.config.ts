@@ -36,6 +36,13 @@ const hasS3 = Boolean(process.env.S3_BUCKET)
 export default buildConfig({
   admin: {
     user: Users.slug,
+    // Lock the Payload panel down to the `admin` role. Without this, any
+    // authenticated user (including students/parents) can reach /admin —
+    // they'd see an empty-ish panel, but it's still an information leak.
+    // Only `admin` may enter the management UI.
+    access: {
+      admin: ({ req: { user } }) => user?.role === 'admin',
+    },
     importMap: {
       baseDir: path.resolve(dirname),
     },
