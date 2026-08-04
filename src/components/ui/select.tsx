@@ -33,10 +33,11 @@ function SelectTrigger({
       className={cn(
         "flex w-fit min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground data-[size=default]:h-9 data-[size=sm]:h-8 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground *:[svg]:pointer-events-none *:[svg]:shrink-0 *:[svg:not([class*='size-'])]:size-4",
         // Allow the trigger to shrink inside a constrained parent (e.g. a dialog)
-        // instead of growing with `w-fit`. Only the value span (marked with
-        // data-slot="select-value") should flex-grow + truncate — NOT the icon
-        // wrapper, otherwise it pushes the value to the center.
-        'overflow-hidden [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:truncate',
+        // instead of growing with `w-fit`. The value span keeps its natural
+        // (left-aligned) position via `justify-between`; we only add min-w-0 +
+        // truncate so long values clip instead of overflowing. Crucially NO
+        // flex-1 here — that would stretch the span and center the text.
+        'overflow-hidden [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate',
         className,
       )}
       {...props}
