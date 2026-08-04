@@ -106,6 +106,11 @@ export const Users: CollectionConfig = {
       type: 'select',
       required: true,
       defaultValue: 'user',
+      // Embed the role in the JWT so middleware (and any edge/SSR check)
+      // can read it without a DB hit. Without `saveToJWT: true` the role
+      // is absent from the token and the /admin guard in middleware would
+      // block everyone — admins included.
+      saveToJWT: true,
       options: [
         { label: 'Ученик', value: 'user' },
         { label: 'Родитель', value: 'parent' },
