@@ -37,6 +37,7 @@ type NavItem = { href: string; label: string; icon: React.ComponentType<{ classN
 const COMMON_NAV: NavItem[] = [
   { href: '/cabinet', label: 'Обзор', icon: LayoutDashboardIcon },
   { href: '/cabinet/schedule', label: 'Расписание', icon: CalendarDaysIcon },
+  { href: '/cabinet/subscriptions', label: 'Абонементы', icon: TicketIcon },
   { href: '/cabinet/sick-leaves', label: 'Больничные', icon: StethoscopeIcon },
   { href: '/cabinet/profile', label: 'Профиль', icon: UserIcon },
   { href: '/cabinet/settings', label: 'Настройки', icon: SettingsIcon },
@@ -46,7 +47,6 @@ const COMMON_NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   { href: '/cabinet/students', label: 'Ученики', icon: GraduationCapIcon },
   { href: '/cabinet/groups', label: 'Группы', icon: UsersIcon },
-  { href: '/cabinet/subscriptions', label: 'Абонементы', icon: TicketIcon },
   { href: '/cabinet/payments', label: 'Оплаты', icon: ReceiptIcon },
 ]
 

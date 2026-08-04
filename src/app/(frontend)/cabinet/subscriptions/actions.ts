@@ -8,14 +8,12 @@ import { isAdminLike } from '@/lib/roles'
 type ActionResult = { success: true } | { success: false; error: string }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}(T.*)?$/
-const VALID_METHODS = new Set(['', 'cash', 'card', 'transfer'])
 
 /**
- * Admin-only: create a subscription AND its payment in one transaction-like
- * flow. If the payment fails after the subscription is created, the
- * subscription is deleted (rollback).
+ * Admin-only: create a subscription (without payment). Payments are managed
+ * separately on the /cabinet/payments page.
  */
-export async function createSubscriptionWithPaymentAction(
+export async function createSubscriptionAction(
   _prev: unknown,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -24,7 +22,6 @@ export async function createSubscriptionWithPaymentAction(
     return { success: false, error: 'Недостаточно прав.' }
   }
 
-  // ── Subscription fields ──
   const student = String(formData.get('student') ?? '').trim()
   const kind = String(formData.get('kind') ?? 'individual') === 'group' ? 'group' : 'individual'
   const totalCredits = Number(formData.get('totalCredits') ?? 0)
@@ -32,38 +29,20 @@ export async function createSubscriptionWithPaymentAction(
   const validUntil = String(formData.get('validUntil') ?? '').trim()
   const notes = String(formData.get('notes') ?? '').trim()
 
-  // ── Payment fields ──
-  const amount = Number(formData.get('amount') ?? 0)
-  const currencyRaw = String(formData.get('currency') ?? 'RUB')
-  const currency: 'RUB' | 'USD' | 'EUR' =
-    currencyRaw === 'USD' || currencyRaw === 'EUR' ? currencyRaw : 'RUB'
-  const method = String(formData.get('method') ?? '').trim()
-  const paidAt = String(formData.get('paidAt') ?? '').trim()
-  const note = String(formData.get('note') ?? '').trim()
-
-  // ── Validation ──
-  if (!student || !validFrom || !validUntil || !paidAt) {
-    return { success: false, error: 'Ученик, период и дата оплаты обязательны.' }
+  if (!student || !validFrom || !validUntil) {
+    return { success: false, error: 'Ученик и период обязательны.' }
   }
   if (!(totalCredits > 0)) {
     return { success: false, error: 'Количество занятий должно быть больше 0.' }
   }
-  if (Number.isNaN(amount) || amount < 0) {
-    return { success: false, error: 'Некорректная сумма оплаты.' }
-  }
-  if (!DATE_RE.test(validFrom) || !DATE_RE.test(validUntil) || !DATE_RE.test(paidAt)) {
+  if (!DATE_RE.test(validFrom) || !DATE_RE.test(validUntil)) {
     return { success: false, error: 'Некорректная дата.' }
-  }
-  if (!VALID_METHODS.has(method)) {
-    return { success: false, error: 'Некорректный способ оплаты.' }
   }
 
   const payload = await getPayloadClient()
 
-  // ── Create subscription ──
-  let subId: string
   try {
-    const sub = await payload.create({
+    await payload.create({
       collection: 'subscriptions',
       overrideAccess: true,
       data: {
@@ -77,36 +56,9 @@ export async function createSubscriptionWithPaymentAction(
         notes: notes || undefined,
       },
     })
-    subId = sub.id
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return { success: false, error: `Не удалось создать абонемент. ${message}` }
-  }
-
-  // ── Create payment linked to the subscription ──
-  try {
-    await payload.create({
-      collection: 'payments',
-      overrideAccess: true,
-      data: {
-        student,
-        subscription: subId,
-        amount,
-        currency,
-        periodFrom: validFrom,
-        periodTo: validUntil,
-        paidAt,
-        method: (method || undefined) as 'cash' | 'card' | 'transfer' | undefined,
-        note: note || undefined,
-      },
-    })
-  } catch (err) {
-    // Rollback: delete the subscription if payment failed.
-    await payload
-      .delete({ collection: 'subscriptions', id: subId, overrideAccess: true })
-      .catch(() => {})
-    const message = err instanceof Error ? err.message : String(err)
-    return { success: false, error: `Не удалось создать оплату. ${message}` }
   }
 
   revalidatePath('/cabinet/subscriptions')
@@ -156,7 +108,7 @@ export async function updateSubscriptionAction(
 }
 
 /**
- * Admin-only: delete a subscription and its linked payment.
+ * Admin-only: delete a subscription and its linked payments.
  */
 export async function deleteSubscriptionAction(
   _prev: unknown,

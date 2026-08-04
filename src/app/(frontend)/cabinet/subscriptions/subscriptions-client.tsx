@@ -5,7 +5,7 @@ import { useActionState, useEffect, useRef, useState, useTransition } from 'reac
 import { toast } from 'sonner'
 
 import {
-  createSubscriptionWithPaymentAction,
+  createSubscriptionAction,
   deleteSubscriptionAction,
   updateSubscriptionAction,
 } from '@/app/(frontend)/cabinet/subscriptions/actions'
@@ -42,22 +42,11 @@ type Subscription = {
   status: string
   notes?: string | null
   student: { id: string; name: string } | null
-  paymentAmount?: number | null
-  paymentCurrency?: string | null
-  paymentMethod?: string | null
-  paidAt?: string | null
 }
 
-const CURRENCY_SYMBOL: Record<string, string> = { RUB: '₽', USD: '$', EUR: '€' }
-const METHOD_LABEL: Record<string, string> = {
-  cash: 'Наличные',
-  card: 'Карта',
-  transfer: 'Перевод',
-}
-
-/** Create form: subscription + payment in one submit. */
+/** Create form: subscription only (no payment). */
 function CreateForm({ students, onDone }: { students: Student[]; onDone: () => void }) {
-  const [state, formAction] = useActionState(createSubscriptionWithPaymentAction, undefined)
+  const [state, formAction] = useActionState(createSubscriptionAction, undefined)
   const [pending, startTransition] = useTransition()
   const [studentId, setStudentId] = useState('')
   const [kind, setKind] = useState<'individual' | 'group'>('individual')
@@ -68,7 +57,7 @@ function CreateForm({ students, onDone }: { students: Student[]; onDone: () => v
     if (shownRef.current) return
     shownRef.current = true
     if (state.success) {
-      toast.success('Абонемент и оплата созданы.')
+      toast.success('Абонемент создан.')
       onDone()
     } else if ('error' in state) {
       toast.error(state.error)
@@ -129,66 +118,6 @@ function CreateForm({ students, onDone }: { students: Student[]; onDone: () => v
         </div>
       </div>
 
-      {/* Payment block */}
-      <div className="rounded-md border border-border p-3">
-        <p className="mb-3 text-sm font-medium">Оплата</p>
-        <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="sub-amount">Сумма</Label>
-              <Input
-                id="sub-amount"
-                name="amount"
-                type="number"
-                min={0}
-                step="0.01"
-                defaultValue={0}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="sub-currency">Валюта</Label>
-              <Select name="currency" defaultValue="RUB">
-                <SelectTrigger id="sub-currency" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="RUB">₽ RUB</SelectItem>
-                  <SelectItem value="USD">$ USD</SelectItem>
-                  <SelectItem value="EUR">€ EUR</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="sub-paidAt">Дата оплаты</Label>
-              <Input
-                id="sub-paidAt"
-                name="paidAt"
-                type="date"
-                defaultValue={new Date().toISOString().slice(0, 10)}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="sub-method">Способ</Label>
-              <Select name="method" defaultValue="">
-                <SelectTrigger id="sub-method" className="w-full">
-                  <SelectValue placeholder="Не указан" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Не указан</SelectItem>
-                  <SelectItem value="cash">Наличные</SelectItem>
-                  <SelectItem value="card">Карта</SelectItem>
-                  <SelectItem value="transfer">Перевод</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="flex flex-col gap-2">
         <Label htmlFor="sub-notes">Заметки</Label>
         <Textarea id="sub-notes" name="notes" rows={2} />
@@ -208,7 +137,7 @@ function CreateForm({ students, onDone }: { students: Student[]; onDone: () => v
   )
 }
 
-/** Edit form: subscription fields only (payment is read-only). */
+/** Edit form: subscription fields only. */
 function EditForm({
   initial,
   onDone,
@@ -219,10 +148,6 @@ function EditForm({
     validFrom: string
     validUntil: string
     notes?: string | null
-    paymentAmount?: number | null
-    paymentCurrency?: string | null
-    paymentMethod?: string | null
-    paidAt?: string | null
   }
   onDone: () => void
 }) {
@@ -301,23 +226,6 @@ function EditForm({
           </div>
         </div>
 
-        {/* Payment info (read-only) */}
-        {initial.paymentAmount != null ? (
-          <div className="rounded-md bg-muted/30 p-3">
-            <p className="mb-2 text-sm font-medium">Оплата</p>
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-              <span>
-                Сумма:{' '}
-                <span className="font-medium text-foreground">
-                  {initial.paymentAmount} {CURRENCY_SYMBOL[initial.paymentCurrency ?? 'RUB'] ?? '₽'}
-                </span>
-              </span>
-              <span>Способ: {METHOD_LABEL[initial.paymentMethod ?? ''] ?? 'не указан'}</span>
-              <span>Оплачено: {initial.paidAt?.slice(0, 10)}</span>
-            </div>
-          </div>
-        ) : null}
-
         <div className="flex flex-col gap-2">
           <Label htmlFor="edit-notes">Заметки</Label>
           <Textarea id="edit-notes" name="notes" defaultValue={initial.notes ?? ''} rows={2} />
@@ -348,7 +256,9 @@ function EditForm({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Удалить абонемент?</DialogTitle>
-            <DialogDescription>Будут удалены абонемент и связанная оплата.</DialogDescription>
+            <DialogDescription>
+              Абонемент и связанные оплаты будут удалены без возможности восстановления.
+            </DialogDescription>
           </DialogHeader>
           <form action={deleteAction} className="flex flex-col gap-3">
             <input type="hidden" name="id" value={initial.id} />
@@ -372,39 +282,76 @@ function EditForm({
 export function SubscriptionsClient({
   students,
   subscriptions,
+  isAdmin,
 }: {
   students: Student[]
   subscriptions: Subscription[]
+  isAdmin: boolean
 }) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<Subscription | null>(null)
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Dialog open={creating} onOpenChange={setCreating}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusIcon />
-              Создать абонемент
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Новый абонемент + оплата</DialogTitle>
-              <DialogDescription>
-                Абонемент создаётся вместе с оплатой — нельзя создать абонемент без оплаты.
-              </DialogDescription>
-            </DialogHeader>
-            <CreateForm students={students} onDone={() => setCreating(false)} />
-          </DialogContent>
-        </Dialog>
-      </div>
+      {isAdmin ? (
+        <div className="flex justify-end">
+          <Dialog open={creating} onOpenChange={setCreating}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusIcon />
+                Создать абонемент
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Новый абонемент</DialogTitle>
+                <DialogDescription>Заполните параметры абонемента.</DialogDescription>
+              </DialogHeader>
+              <CreateForm students={students} onDone={() => setCreating(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
+      ) : null}
 
       <div className="grid gap-3">
+        {subscriptions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Абонементов пока нет.</p>
+        ) : null}
         {subscriptions.map((sub) => {
           const pct =
             sub.totalCredits > 0 ? Math.round((sub.remainingCredits / sub.totalCredits) * 100) : 0
+
+          // Read-only card for non-admins.
+          if (!isAdmin) {
+            return (
+              <div
+                key={sub.id}
+                className="flex items-center gap-4 rounded-lg border border-border bg-card p-4"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {sub.kind === 'group' ? 'Групповой' : 'Индивидуальный'}
+                    </span>
+                    <StatusBadge status={sub.status} />
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {sub.validFrom?.slice(0, 10)} — {sub.validUntil?.slice(0, 10)}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs font-medium">
+                      {sub.remainingCredits}/{sub.totalCredits}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          // Editable card for admins.
           return (
             <Dialog
               key={sub.id}
@@ -431,13 +378,6 @@ export function SubscriptionsClient({
                       {sub.remainingCredits}/{sub.totalCredits}
                     </span>
                   </div>
-                  {sub.paymentAmount != null ? (
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      Оплачено: {sub.paymentAmount}{' '}
-                      {CURRENCY_SYMBOL[sub.paymentCurrency ?? 'RUB'] ?? '₽'} ·{' '}
-                      {sub.paidAt?.slice(0, 10)}
-                    </div>
-                  ) : null}
                 </div>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="icon">
@@ -460,10 +400,6 @@ export function SubscriptionsClient({
                     validFrom: sub.validFrom,
                     validUntil: sub.validUntil,
                     notes: sub.notes,
-                    paymentAmount: sub.paymentAmount,
-                    paymentCurrency: sub.paymentCurrency,
-                    paymentMethod: sub.paymentMethod,
-                    paidAt: sub.paidAt,
                   }}
                 />
               </DialogContent>
