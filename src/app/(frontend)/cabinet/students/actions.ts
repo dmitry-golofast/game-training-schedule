@@ -195,3 +195,69 @@ export async function updateStudentAction(
   revalidatePath(`/cabinet/students/${id}`)
   return { success: true }
 }
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}(T.*)?$/
+
+/**
+ * Admin-only: assign a subscription to a student from a template.
+ *
+ * Creates a concrete subscription instance: copies kind/totalCredits/notes
+ * from the template, binds the student + validity period. The
+ * `beforeChange` hook on the Subscriptions collection initializes
+ * remainingCredits = totalCredits and status = 'active'.
+ */
+export async function assignSubscriptionAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const me = await getCurrentUser()
+  if (!me || !isAdminLike(me.role)) {
+    return { success: false, error: 'Недостаточно прав.' }
+  }
+
+  const studentId = String(formData.get('studentId') ?? '').trim()
+  const templateId = String(formData.get('templateId') ?? '').trim()
+  const validFrom = String(formData.get('validFrom') ?? '').trim()
+  const validUntil = String(formData.get('validUntil') ?? '').trim()
+
+  if (!studentId || !templateId || !validFrom || !validUntil) {
+    return { success: false, error: 'Заполните все поля.' }
+  }
+  if (!DATE_RE.test(validFrom) || !DATE_RE.test(validUntil)) {
+    return { success: false, error: 'Некорректная дата.' }
+  }
+
+  const payload = await getPayloadClient()
+
+  // Load the template to copy its fields.
+  const tpl = await payload.findByID({
+    collection: 'subscription-templates',
+    id: templateId,
+    overrideAccess: true,
+  })
+
+  try {
+    await payload.create({
+      collection: 'subscriptions',
+      overrideAccess: true,
+      data: {
+        student: studentId,
+        template: templateId,
+        kind: tpl.kind,
+        totalCredits: tpl.totalCredits,
+        remainingCredits: tpl.totalCredits,
+        validFrom,
+        validUntil,
+        status: 'active',
+        notes: tpl.notes || undefined,
+      },
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { success: false, error: `Не удалось создать абонемент. ${message}` }
+  }
+
+  revalidatePath(`/cabinet/students/${studentId}`)
+  revalidatePath('/cabinet/profile')
+  return { success: true }
+}

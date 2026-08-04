@@ -1,10 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useActionState, useEffect, useState, useTransition } from 'react'
+import { PlusIcon } from 'lucide-react'
+import { toast } from 'sonner'
 
+import { assignSubscriptionAction } from '@/app/(frontend)/cabinet/students/actions'
 import { DocumentsSection } from '@/app/(frontend)/cabinet/profile/documents-section'
 import { PaymentHistory } from '@/app/(frontend)/cabinet/profile/payment-history'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +49,13 @@ const TABS: Tab[] = [
   { id: 'sick-leaves', label: 'Больничные' },
 ]
 
+type Template = {
+  id: string
+  title: string
+  kind: 'individual' | 'group'
+  totalCredits: number
+}
+
 export function StudentTabs({
   student,
   parentDoc,
@@ -34,6 +64,8 @@ export function StudentTabs({
   documents,
   sickLeaves,
   scheduleSlots,
+  templates,
+  isAdmin,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   student: any
@@ -49,10 +81,12 @@ export function StudentTabs({
   sickLeaves: any[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   scheduleSlots: any[]
+  templates: Template[]
+  isAdmin: boolean
 }) {
   const [activeTab, setActiveTab] = useState('info')
 
-  const fullName = [student.lastName, student.firstName, student.middleAge]
+  const fullName = [student.lastName, student.firstName, student.middleName]
     .filter(Boolean)
     .join(' ')
   const fullDisplayName = [student.lastName, student.firstName, student.middleName]
@@ -179,8 +213,11 @@ export function StudentTabs({
 
         {activeTab === 'subscriptions' && (
           <Card>
-            <CardHeader>
+            <CardHeader className="flex-row items-center justify-between">
               <CardTitle>Абонементы ({subscriptions.length})</CardTitle>
+              {isAdmin ? (
+                <AssignSubscriptionDialog studentId={student.id} templates={templates} />
+              ) : null}
             </CardHeader>
             <CardContent>
               {subscriptions.length === 0 ? (
@@ -207,7 +244,8 @@ export function StudentTabs({
                           <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Действует до: {sub.validUntil?.slice(0, 10)}
+                          Действует с {sub.validFrom?.slice(0, 10)} до{' '}
+                          {sub.validUntil?.slice(0, 10)}
                         </div>
                       </div>
                     )
@@ -332,5 +370,93 @@ function Row({ label, value }: { label: string; value?: string | null }) {
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-sm font-medium">{value || '—'}</span>
     </div>
+  )
+}
+
+/** Dialog for assigning a subscription (from a template) to this student. */
+function AssignSubscriptionDialog({
+  studentId,
+  templates,
+}: {
+  studentId: string
+  templates: Template[]
+}) {
+  const [open, setOpen] = useState(false)
+  const [state, formAction] = useActionState(assignSubscriptionAction, undefined)
+  const [pending, startTransition] = useTransition()
+  const [templateId, setTemplateId] = useState('')
+
+  useEffect(() => {
+    if (!state) return
+    if (state.success) {
+      toast.success('Абонемент добавлен.')
+      setOpen(false)
+      setTemplateId('')
+    } else if ('error' in state) {
+      toast.error(state.error)
+    }
+  }, [state])
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <PlusIcon />
+          Добавить
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Добавить абонемент</DialogTitle>
+          <DialogDescription>Выберите шаблон и период действия.</DialogDescription>
+        </DialogHeader>
+        <form
+          action={formAction}
+          onSubmit={() => startTransition(() => {})}
+          className="flex flex-col gap-4"
+        >
+          <input type="hidden" name="studentId" value={studentId} />
+          <input type="hidden" name="templateId" value={templateId} />
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="assign-template">Шаблон</Label>
+            <Select value={templateId} onValueChange={setTemplateId}>
+              <SelectTrigger id="assign-template" className="w-full">
+                <SelectValue placeholder="Выберите шаблон" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.title} · {t.totalCredits} зан. ({t.kind === 'group' ? 'групп.' : 'индивид.'})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="assign-from">Действует с</Label>
+              <Input id="assign-from" name="validFrom" type="date" required />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="assign-until">Действует по</Label>
+              <Input id="assign-until" name="validUntil" type="date" required />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Отмена
+              </Button>
+            </DialogClose>
+            <Button type="submit" disabled={pending || !templateId}>
+              {pending ? 'Добавляем…' : 'Добавить'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -73,6 +73,7 @@ export interface Config {
     'schedule-slots': ScheduleSlot;
     groups: Group;
     subscriptions: Subscription;
+    'subscription-templates': SubscriptionTemplate;
     'credit-transactions': CreditTransaction;
     documents: Document;
     payments: Payment;
@@ -92,6 +93,7 @@ export interface Config {
     'schedule-slots': ScheduleSlotsSelect<false> | ScheduleSlotsSelect<true>;
     groups: GroupsSelect<false> | GroupsSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
+    'subscription-templates': SubscriptionTemplatesSelect<false> | SubscriptionTemplatesSelect<true>;
     'credit-transactions': CreditTransactionsSelect<false> | CreditTransactionsSelect<true>;
     documents: DocumentsSelect<false> | DocumentsSelect<true>;
     payments: PaymentsSelect<false> | PaymentsSelect<true>;
@@ -338,6 +340,10 @@ export interface Group {
  */
 export interface Subscription {
   id: string;
+  /**
+   * Шаблон, из которого создан этот абонемент.
+   */
+  template?: (string | null) | SubscriptionTemplate;
   student: string | User;
   kind: 'individual' | 'group';
   /**
@@ -357,6 +363,25 @@ export interface Subscription {
    */
   validUntil: string;
   status: 'active' | 'expired' | 'closed';
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscription-templates".
+ */
+export interface SubscriptionTemplate {
+  id: string;
+  /**
+   * Название абонемента (например: «Индивидуальный 8 занятий»).
+   */
+  title: string;
+  kind: 'individual' | 'group';
+  /**
+   * Сколько занятий входит в абонемент.
+   */
+  totalCredits: number;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -662,6 +687,10 @@ export interface PayloadLockedDocument {
         value: string | Subscription;
       } | null)
     | ({
+        relationTo: 'subscription-templates';
+        value: string | SubscriptionTemplate;
+      } | null)
+    | ({
         relationTo: 'credit-transactions';
         value: string | CreditTransaction;
       } | null)
@@ -845,6 +874,7 @@ export interface GroupsSelect<T extends boolean = true> {
  * via the `definition` "subscriptions_select".
  */
 export interface SubscriptionsSelect<T extends boolean = true> {
+  template?: T;
   student?: T;
   kind?: T;
   totalCredits?: T;
@@ -852,6 +882,18 @@ export interface SubscriptionsSelect<T extends boolean = true> {
   validFrom?: T;
   validUntil?: T;
   status?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscription-templates_select".
+ */
+export interface SubscriptionTemplatesSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  totalCredits?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;

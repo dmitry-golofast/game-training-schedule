@@ -1,13 +1,13 @@
 'use client'
 
 import { PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
-import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
+import { useActionState, useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
 import {
-  createSubscriptionAction,
-  deleteSubscriptionAction,
-  updateSubscriptionAction,
+  createTemplateAction,
+  deleteTemplateAction,
+  updateTemplateAction,
 } from '@/app/(frontend)/cabinet/subscriptions/actions'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,37 +31,27 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 
-type Student = { id: string; name: string; email: string }
-type Subscription = {
+type Template = {
   id: string
+  title: string
   kind: 'individual' | 'group'
   totalCredits: number
-  remainingCredits: number
-  validFrom: string
-  validUntil: string
-  status: string
   notes?: string | null
-  student: { id: string; name: string } | null
 }
 
-/** Create form: subscription only (no payment). */
-function CreateForm({ students, onDone }: { students: Student[]; onDone: () => void }) {
-  const [state, formAction] = useActionState(createSubscriptionAction, undefined)
+/** Create form: template fields only (no student, no dates). */
+function CreateForm({ onDone }: { onDone: () => void }) {
+  const [state, formAction] = useActionState(createTemplateAction, undefined)
   const [pending, startTransition] = useTransition()
-  const [studentId, setStudentId] = useState('')
   const [kind, setKind] = useState<'individual' | 'group'>('individual')
-  const shownRef = useRef(false)
 
   useEffect(() => {
     if (!state) return
-    if (shownRef.current) return
-    shownRef.current = true
     if (state.success) {
-      toast.success('Абонемент создан.')
+      toast.success('Шаблон создан.')
       onDone()
     } else if ('error' in state) {
       toast.error(state.error)
-      shownRef.current = false
     }
   }, [state, onDone])
 
@@ -72,27 +62,20 @@ function CreateForm({ students, onDone }: { students: Student[]; onDone: () => v
       className="flex flex-col gap-4"
     >
       <div className="flex flex-col gap-2">
-        <Label htmlFor="sub-student">Ученик</Label>
-        <input type="hidden" name="student" value={studentId} />
-        <Select value={studentId} onValueChange={setStudentId}>
-          <SelectTrigger id="sub-student" className="w-full">
-            <SelectValue placeholder="Выберите ученика" />
-          </SelectTrigger>
-          <SelectContent>
-            {students.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.name} ({s.email})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label htmlFor="tpl-title">Название</Label>
+        <Input
+          id="tpl-title"
+          name="title"
+          placeholder="например: Индивидуальный 8 занятий"
+          required
+        />
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="sub-kind">Тип</Label>
+        <Label htmlFor="tpl-kind">Тип</Label>
         <input type="hidden" name="kind" value={kind} />
         <Select value={kind} onValueChange={(v) => setKind(v === 'group' ? 'group' : 'individual')}>
-          <SelectTrigger id="sub-kind" className="w-full">
+          <SelectTrigger id="tpl-kind" className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -103,24 +86,13 @@ function CreateForm({ students, onDone }: { students: Student[]; onDone: () => v
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="sub-total">Количество занятий</Label>
-        <Input id="sub-total" name="totalCredits" type="number" min={1} defaultValue={8} required />
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="sub-from">Действует с</Label>
-          <Input id="sub-from" name="validFrom" type="date" required />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="sub-until">Действует по</Label>
-          <Input id="sub-until" name="validUntil" type="date" required />
-        </div>
+        <Label htmlFor="tpl-total">Количество занятий</Label>
+        <Input id="tpl-total" name="totalCredits" type="number" min={1} defaultValue={8} required />
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="sub-notes">Заметки</Label>
-        <Textarea id="sub-notes" name="notes" rows={2} />
+        <Label htmlFor="tpl-notes">Заметки</Label>
+        <Textarea id="tpl-notes" name="notes" rows={2} />
       </div>
 
       <DialogFooter>
@@ -137,31 +109,19 @@ function CreateForm({ students, onDone }: { students: Student[]; onDone: () => v
   )
 }
 
-/** Edit form: subscription fields only. */
-function EditForm({
-  initial,
-  onDone,
-}: {
-  initial: {
-    id: string
-    kind: string
-    validFrom: string
-    validUntil: string
-    notes?: string | null
-  }
-  onDone: () => void
-}) {
-  const [state, formAction] = useActionState(updateSubscriptionAction, undefined)
+/** Edit form: template fields only. */
+function EditForm({ initial, onDone }: { initial: Template; onDone: () => void }) {
+  const [state, formAction] = useActionState(updateTemplateAction, undefined)
   const [pending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [deleteState, deleteAction] = useActionState(deleteSubscriptionAction, undefined)
+  const [deleteState, deleteAction] = useActionState(deleteTemplateAction, undefined)
   const [kind, setKind] = useState<'individual' | 'group'>(
     initial.kind === 'group' ? 'group' : 'individual',
   )
 
   useEffect(() => {
     if (state?.success) {
-      toast.success('Абонемент обновлён.')
+      toast.success('Шаблон обновлён.')
       onDone()
     } else if (state && !state.success) {
       toast.error(state.error)
@@ -170,7 +130,7 @@ function EditForm({
 
   useEffect(() => {
     if (deleteState?.success) {
-      toast.success('Абонемент удалён.')
+      toast.success('Шаблон удалён.')
       onDone()
     } else if (deleteState && !deleteState.success) {
       toast.error(deleteState.error)
@@ -185,6 +145,11 @@ function EditForm({
         className="flex flex-col gap-4"
       >
         <input type="hidden" name="id" value={initial.id} />
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="edit-title">Название</Label>
+          <Input id="edit-title" name="title" defaultValue={initial.title} required />
+        </div>
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="edit-kind">Тип</Label>
@@ -203,27 +168,16 @@ function EditForm({
           </Select>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="edit-from">Действует с</Label>
-            <Input
-              id="edit-from"
-              name="validFrom"
-              type="date"
-              defaultValue={initial.validFrom?.slice(0, 10)}
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="edit-until">Действует по</Label>
-            <Input
-              id="edit-until"
-              name="validUntil"
-              type="date"
-              defaultValue={initial.validUntil?.slice(0, 10)}
-              required
-            />
-          </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="edit-total">Количество занятий</Label>
+          <Input
+            id="edit-total"
+            name="totalCredits"
+            type="number"
+            min={1}
+            defaultValue={initial.totalCredits}
+            required
+          />
         </div>
 
         <div className="flex flex-col gap-2">
@@ -255,9 +209,9 @@ function EditForm({
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Удалить абонемент?</DialogTitle>
+            <DialogTitle>Удалить шаблон?</DialogTitle>
             <DialogDescription>
-              Абонемент и связанные оплаты будут удалены без возможности восстановления.
+              Существующие абонементы учеников, созданные из этого шаблона, не будут затронуты.
             </DialogDescription>
           </DialogHeader>
           <form action={deleteAction} className="flex flex-col gap-3">
@@ -280,16 +234,14 @@ function EditForm({
 }
 
 export function SubscriptionsClient({
-  students,
-  subscriptions,
+  templates,
   isAdmin,
 }: {
-  students: Student[]
-  subscriptions: Subscription[]
+  templates: Template[]
   isAdmin: boolean
 }) {
   const [creating, setCreating] = useState(false)
-  const [editing, setEditing] = useState<Subscription | null>(null)
+  const [editing, setEditing] = useState<Template | null>(null)
 
   return (
     <div className="flex flex-col gap-4">
@@ -299,86 +251,58 @@ export function SubscriptionsClient({
             <DialogTrigger asChild>
               <Button>
                 <PlusIcon />
-                Создать абонемент
+                Создать шаблон
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>Новый абонемент</DialogTitle>
-                <DialogDescription>Заполните параметры абонемента.</DialogDescription>
+                <DialogTitle>Новый шаблон абонемента</DialogTitle>
+                <DialogDescription>Шаблон можно привязать ученикам в их профиле.</DialogDescription>
               </DialogHeader>
-              <CreateForm students={students} onDone={() => setCreating(false)} />
+              <CreateForm onDone={() => setCreating(false)} />
             </DialogContent>
           </Dialog>
         </div>
       ) : null}
 
       <div className="grid gap-3">
-        {subscriptions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Абонементов пока нет.</p>
+        {templates.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Шаблонов пока нет.</p>
         ) : null}
-        {subscriptions.map((sub) => {
-          const pct =
-            sub.totalCredits > 0 ? Math.round((sub.remainingCredits / sub.totalCredits) * 100) : 0
+        {templates.map((tpl) => {
+          const card = (
+            <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{tpl.title}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {tpl.kind === 'group' ? 'Групповой' : 'Индивидуальный'}
+                  </span>
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">{tpl.totalCredits} занятий</div>
+                {tpl.notes ? (
+                  <div className="mt-1 text-xs text-muted-foreground">{tpl.notes}</div>
+                ) : null}
+              </div>
+            </div>
+          )
 
-          // Read-only card for non-admins.
           if (!isAdmin) {
             return (
-              <div
-                key={sub.id}
-                className="flex items-center gap-4 rounded-lg border border-border bg-card p-4"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {sub.kind === 'group' ? 'Групповой' : 'Индивидуальный'}
-                    </span>
-                    <StatusBadge status={sub.status} />
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {sub.validFrom?.slice(0, 10)} — {sub.validUntil?.slice(0, 10)}
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                      <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="text-xs font-medium">
-                      {sub.remainingCredits}/{sub.totalCredits}
-                    </span>
-                  </div>
-                </div>
+              <div key={tpl.id}>
+                <div>{card}</div>
               </div>
             )
           }
 
-          // Editable card for admins.
           return (
             <Dialog
-              key={sub.id}
-              open={editing?.id === sub.id}
-              onOpenChange={(open) => setEditing(open ? sub : null)}
+              key={tpl.id}
+              open={editing?.id === tpl.id}
+              onOpenChange={(open) => setEditing(open ? tpl : null)}
             >
-              <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{sub.student?.name ?? '—'}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {sub.kind === 'group' ? 'Групповой' : 'Индивид.'}
-                    </span>
-                    <StatusBadge status={sub.status} />
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {sub.validFrom?.slice(0, 10)} — {sub.validUntil?.slice(0, 10)}
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                      <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="text-xs font-medium">
-                      {sub.remainingCredits}/{sub.totalCredits}
-                    </span>
-                  </div>
-                </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1">{card}</div>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="icon">
                     <PencilIcon />
@@ -387,40 +311,15 @@ export function SubscriptionsClient({
               </div>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Редактирование абонемента</DialogTitle>
-                  <DialogDescription>
-                    {sub.student?.name} — осталось {sub.remainingCredits}/{sub.totalCredits}
-                  </DialogDescription>
+                  <DialogTitle>Редактирование шаблона</DialogTitle>
+                  <DialogDescription>{tpl.title}</DialogDescription>
                 </DialogHeader>
-                <EditForm
-                  onDone={() => setEditing(null)}
-                  initial={{
-                    id: sub.id,
-                    kind: sub.kind,
-                    validFrom: sub.validFrom,
-                    validUntil: sub.validUntil,
-                    notes: sub.notes,
-                  }}
-                />
+                <EditForm initial={tpl} onDone={() => setEditing(null)} />
               </DialogContent>
             </Dialog>
           )
         })}
       </div>
     </div>
-  )
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    active: 'bg-primary/10 text-primary',
-    expired: 'bg-muted text-muted-foreground',
-    closed: 'bg-destructive/10 text-destructive',
-  }
-  const label: Record<string, string> = { active: 'Активен', expired: 'Истёк', closed: 'Закрыт' }
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${map[status] ?? ''}`}>
-      {label[status] ?? status}
-    </span>
   )
 }

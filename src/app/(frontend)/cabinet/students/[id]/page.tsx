@@ -59,53 +59,67 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   let scheduleSlots: AnyDoc[] = []
 
   try {
-    const [subsResult, paymentsResult, docsResult, sickResult, slotsResult] = await Promise.all([
-      payload.find({
-        collection: 'subscriptions',
-        where: { student: { equals: id } },
-        sort: '-validUntil',
-        limit: 50,
-        overrideAccess: true,
-        depth: 1,
-      }),
-      payload.find({
-        collection: 'payments',
-        where: { student: { equals: id } },
-        sort: '-paidAt',
-        limit: 50,
-        overrideAccess: true,
-        depth: 1,
-      }),
-      payload.find({
-        collection: 'documents',
-        where: { student: { equals: id } },
-        sort: '-createdAt',
-        limit: 50,
-        overrideAccess: true,
-        depth: 1,
-      }),
-      payload.find({
-        collection: 'sick-leaves',
-        where: { student: { equals: id } },
-        sort: '-createdAt',
-        limit: 50,
-        overrideAccess: true,
-        depth: 2,
-      }),
-      payload.find({
-        collection: 'schedule-slots',
-        where: { student: { equals: id } },
-        sort: '-startAt',
-        limit: 30,
-        overrideAccess: true,
-        depth: 1,
-      }),
-    ])
+    const [subsResult, paymentsResult, docsResult, sickResult, slotsResult, tplResult] =
+      await Promise.all([
+        payload.find({
+          collection: 'subscriptions',
+          where: { student: { equals: id } },
+          sort: '-validUntil',
+          limit: 50,
+          overrideAccess: true,
+          depth: 1,
+        }),
+        payload.find({
+          collection: 'payments',
+          where: { student: { equals: id } },
+          sort: '-paidAt',
+          limit: 50,
+          overrideAccess: true,
+          depth: 1,
+        }),
+        payload.find({
+          collection: 'documents',
+          where: { student: { equals: id } },
+          sort: '-createdAt',
+          limit: 50,
+          overrideAccess: true,
+          depth: 1,
+        }),
+        payload.find({
+          collection: 'sick-leaves',
+          where: { student: { equals: id } },
+          sort: '-createdAt',
+          limit: 50,
+          overrideAccess: true,
+          depth: 2,
+        }),
+        payload.find({
+          collection: 'schedule-slots',
+          where: { student: { equals: id } },
+          sort: '-startAt',
+          limit: 30,
+          overrideAccess: true,
+          depth: 1,
+        }),
+        payload.find({
+          collection: 'subscription-templates',
+          sort: 'title',
+          limit: 100,
+          overrideAccess: true,
+        }),
+      ])
     subscriptions = subsResult.docs
     payments = paymentsResult.docs
     documents = docsResult.docs
     sickLeaves = sickResult.docs
     scheduleSlots = slotsResult.docs
+
+    const templates = tplResult.docs.map((t) => ({
+      id: t.id,
+      title: t.title,
+      kind: t.kind,
+      totalCredits: t.totalCredits,
+    }))
   } catch {
     // DB errors — render with empty sections.
   }
@@ -146,6 +160,8 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
         documents={documents}
         sickLeaves={sickLeaves}
         scheduleSlots={scheduleSlots}
+        templates={templates}
+        isAdmin
       />
     </div>
   )

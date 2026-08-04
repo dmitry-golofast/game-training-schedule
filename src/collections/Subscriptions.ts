@@ -74,6 +74,16 @@ export const Subscriptions: CollectionConfig = {
   },
   fields: [
     {
+      name: 'template',
+      type: 'relationship',
+      relationTo: 'subscription-templates',
+      // Optional: legacy subscriptions created before templates have none.
+      admin: {
+        position: 'sidebar',
+        description: 'Шаблон, из которого создан этот абонемент.',
+      },
+    },
+    {
       name: 'student',
       type: 'relationship',
       relationTo: 'users',

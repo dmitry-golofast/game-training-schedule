@@ -17,6 +17,7 @@ import { Payments } from './collections/Payments'
 import { ScheduleSlots } from './collections/ScheduleSlots'
 import { SickLeaves } from './collections/SickLeaves'
 import { Subscriptions } from './collections/Subscriptions'
+import { SubscriptionTemplates } from './collections/SubscriptionTemplates'
 import { UserNotes } from './collections/UserNotes'
 import { Users } from './collections/Users'
 
@@ -47,6 +48,7 @@ export default buildConfig({
     ScheduleSlots,
     Groups,
     Subscriptions,
+    SubscriptionTemplates,
     CreditTransactions,
     Documents,
     Payments,
