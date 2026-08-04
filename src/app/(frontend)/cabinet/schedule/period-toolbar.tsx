@@ -94,25 +94,51 @@ export function PeriodToolbar({
   const title = useMemo(() => periodTitle(cursor, view, timezone), [cursor, view, timezone])
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-1">
-        <Button variant="outline" size="icon" onClick={onPrev} aria-label="Предыдущий период">
-          <ChevronLeftIcon />
-        </Button>
-        <Button variant="outline" size="sm" onClick={onToday}>
-          Сегодня
-        </Button>
-        <Button variant="outline" size="icon" onClick={onNext} aria-label="Следующий период">
-          <ChevronRightIcon />
-        </Button>
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      {/* Row 1: prev/today/next (left) + view switcher (right).
+          On mobile these share one row so the toolbar stays compact; on
+          desktop the title takes the middle and the switcher sits at the end. */}
+      <div className="flex items-center justify-between gap-2 sm:justify-start">
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="icon" onClick={onPrev} aria-label="Предыдущий период">
+            <ChevronLeftIcon />
+          </Button>
+          <Button variant="outline" size="sm" onClick={onToday}>
+            Сегодня
+          </Button>
+          <Button variant="outline" size="icon" onClick={onNext} aria-label="Следующий период">
+            <ChevronRightIcon />
+          </Button>
+        </div>
+
+        {/* View switcher — shown inline on mobile, moved to the end on desktop. */}
+        <div className="inline-flex rounded-lg bg-muted p-0.5 text-muted-foreground sm:hidden">
+          {VIEW_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => navigate({ view: opt.value })}
+              className={cn(
+                'rounded-md px-2.5 py-1 text-sm font-medium transition-colors',
+                view === opt.value
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'hover:text-foreground',
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {/* Title — centered on mobile (own row), right-aligned on desktop. */}
       <div className="flex flex-col items-center text-center sm:items-end sm:text-right">
         <h2 className="text-lg font-semibold tracking-tight capitalize">{title}</h2>
         <span className="text-xs text-muted-foreground">{timezoneLabel(timezone, cursor)}</span>
       </div>
 
-      <div className="inline-flex rounded-lg bg-muted p-0.5 text-muted-foreground">
+      {/* View switcher — desktop only (mobile copy is in the row above). */}
+      <div className="hidden rounded-lg bg-muted p-0.5 text-muted-foreground sm:inline-flex">
         {VIEW_OPTIONS.map((opt) => (
           <button
             key={opt.value}
