@@ -45,18 +45,28 @@ export function toGridSlot(slot: ScheduleSlot): GridSlot {
       ? {
           id: slot.group.id,
           name: slot.group.name,
+          // Members may arrive as populated user objects OR as bare id strings
+          // (when the populate depth is exhausted). Normalize both into the
+          // minimal {id,name,email} shape; names for bare ids get enriched on
+          // the client via the `groups` list (see schedule-grid fallback).
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           members: Array.isArray((slot.group as any).members)
             ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ((slot.group as any).members as any[])
-                .filter((m) => typeof m === 'object' && m !== null)
-                .map((m) => ({
-                  id: String(m.id),
-                  name:
-                    [m.lastName, m.firstName].filter(Boolean).join(' ') ||
-                    String(m.name || m.email || ''),
-                  email: String(m.email || ''),
-                }))
+                .map((m) => {
+                  if (typeof m === 'object' && m !== null) {
+                    return {
+                      id: String(m.id),
+                      name:
+                        [m.lastName, m.firstName].filter(Boolean).join(' ') ||
+                        String(m.name || m.email || ''),
+                      email: String(m.email || ''),
+                    }
+                  }
+                  // Bare id — keep it so the client can enrich from the groups list.
+                  return { id: String(m), name: '', email: '' }
+                })
+                .filter((m) => m.id)
             : undefined,
         }
       : null
