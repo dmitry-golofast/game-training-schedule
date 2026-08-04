@@ -24,7 +24,7 @@ export function AuthCard({
           href="/"
           className="mb-6 flex items-center justify-center font-semibold tracking-tight"
         >
-          Taskona
+          eventFit App
         </Link>
         <Card>
           <CardHeader className="text-center">
