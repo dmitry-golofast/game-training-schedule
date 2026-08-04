@@ -382,6 +382,14 @@ export interface SubscriptionTemplate {
    * Сколько занятий входит в абонемент.
    */
   totalCredits: number;
+  /**
+   * Стоимость абонемента в рублях (для справки).
+   */
+  price?: number | null;
+  /**
+   * Срок действия по умолчанию (дней). Используется при привязке ученику.
+   */
+  durationDays?: number | null;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -894,6 +902,8 @@ export interface SubscriptionTemplatesSelect<T extends boolean = true> {
   title?: T;
   kind?: T;
   totalCredits?: T;
+  price?: T;
+  durationDays?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;

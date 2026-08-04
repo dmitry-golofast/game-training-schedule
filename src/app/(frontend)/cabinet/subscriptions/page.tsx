@@ -23,6 +23,8 @@ export default async function SubscriptionsPage() {
     title: t.title,
     kind: t.kind,
     totalCredits: t.totalCredits,
+    price: t.price ?? null,
+    durationDays: t.durationDays ?? null,
     notes: t.notes ?? null,
   }))
 

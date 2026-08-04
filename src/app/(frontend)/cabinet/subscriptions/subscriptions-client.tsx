@@ -36,6 +36,8 @@ type Template = {
   title: string
   kind: 'individual' | 'group'
   totalCredits: number
+  price?: number | null
+  durationDays?: number | null
   notes?: string | null
 }
 
@@ -88,6 +90,24 @@ function CreateForm({ onDone }: { onDone: () => void }) {
       <div className="flex flex-col gap-2">
         <Label htmlFor="tpl-total">Количество занятий</Label>
         <Input id="tpl-total" name="totalCredits" type="number" min={1} defaultValue={8} required />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="tpl-price">Стоимость (₽)</Label>
+          <Input id="tpl-price" name="price" type="number" min={0} step="0.01" placeholder="0" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="tpl-duration">Срок действия (дней)</Label>
+          <Input
+            id="tpl-duration"
+            name="durationDays"
+            type="number"
+            min={1}
+            defaultValue={30}
+            required
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -178,6 +198,32 @@ function EditForm({ initial, onDone }: { initial: Template; onDone: () => void }
             defaultValue={initial.totalCredits}
             required
           />
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="edit-price">Стоимость (₽)</Label>
+            <Input
+              id="edit-price"
+              name="price"
+              type="number"
+              min={0}
+              step="0.01"
+              defaultValue={initial.price ?? undefined}
+              placeholder="0"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="edit-duration">Срок действия (дней)</Label>
+            <Input
+              id="edit-duration"
+              name="durationDays"
+              type="number"
+              min={1}
+              defaultValue={initial.durationDays ?? 30}
+              required
+            />
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -279,7 +325,11 @@ export function SubscriptionsClient({
                     {tpl.kind === 'group' ? 'Групповой' : 'Индивидуальный'}
                   </span>
                 </div>
-                <div className="mt-1 text-sm text-muted-foreground">{tpl.totalCredits} занятий</div>
+                <div className="mt-1 flex flex-wrap gap-3 text-sm text-muted-foreground">
+                  <span>{tpl.totalCredits} занятий</span>
+                  {tpl.price != null ? <span>{tpl.price} ₽</span> : null}
+                  {tpl.durationDays ? <span>{tpl.durationDays} дней</span> : null}
+                </div>
                 {tpl.notes ? (
                   <div className="mt-1 text-xs text-muted-foreground">{tpl.notes}</div>
                 ) : null}

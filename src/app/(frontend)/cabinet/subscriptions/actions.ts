@@ -22,6 +22,11 @@ export async function createTemplateAction(
   const title = String(formData.get('title') ?? '').trim()
   const kind = String(formData.get('kind') ?? 'individual') === 'group' ? 'group' : 'individual'
   const totalCredits = Number(formData.get('totalCredits') ?? 0)
+  const priceRaw = formData.get('price')
+  const price = priceRaw === null || priceRaw === '' ? undefined : Number(priceRaw)
+  const durationDaysRaw = formData.get('durationDays')
+  const durationDays =
+    durationDaysRaw === null || durationDaysRaw === '' ? 30 : Number(durationDaysRaw)
   const notes = String(formData.get('notes') ?? '').trim()
 
   if (!title) {
@@ -30,13 +35,26 @@ export async function createTemplateAction(
   if (!(totalCredits > 0)) {
     return { success: false, error: 'Количество занятий должно быть больше 0.' }
   }
+  if (price != null && Number.isNaN(price)) {
+    return { success: false, error: 'Некорректная стоимость.' }
+  }
+  if (!(durationDays > 0)) {
+    return { success: false, error: 'Срок действия должен быть больше 0.' }
+  }
 
   const payload = await getPayloadClient()
   try {
     await payload.create({
       collection: 'subscription-templates',
       overrideAccess: true,
-      data: { title, kind, totalCredits, notes: notes || undefined },
+      data: {
+        title,
+        kind,
+        totalCredits,
+        price,
+        durationDays,
+        notes: notes || undefined,
+      },
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -63,6 +81,11 @@ export async function updateTemplateAction(
   const title = String(formData.get('title') ?? '').trim()
   const kind = String(formData.get('kind') ?? 'individual') === 'group' ? 'group' : 'individual'
   const totalCredits = Number(formData.get('totalCredits') ?? 0)
+  const priceRaw = formData.get('price')
+  const price = priceRaw === null || priceRaw === '' ? undefined : Number(priceRaw)
+  const durationDaysRaw = formData.get('durationDays')
+  const durationDays =
+    durationDaysRaw === null || durationDaysRaw === '' ? 30 : Number(durationDaysRaw)
   const notes = String(formData.get('notes') ?? '').trim()
 
   if (!id || !title) {
@@ -71,6 +94,12 @@ export async function updateTemplateAction(
   if (!(totalCredits > 0)) {
     return { success: false, error: 'Количество занятий должно быть больше 0.' }
   }
+  if (price != null && Number.isNaN(price)) {
+    return { success: false, error: 'Некорректная стоимость.' }
+  }
+  if (!(durationDays > 0)) {
+    return { success: false, error: 'Срок действия должен быть больше 0.' }
+  }
 
   const payload = await getPayloadClient()
   try {
@@ -78,7 +107,14 @@ export async function updateTemplateAction(
       collection: 'subscription-templates',
       id,
       overrideAccess: true,
-      data: { title, kind, totalCredits, notes: notes || undefined },
+      data: {
+        title,
+        kind,
+        totalCredits,
+        price,
+        durationDays,
+        notes: notes || undefined,
+      },
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

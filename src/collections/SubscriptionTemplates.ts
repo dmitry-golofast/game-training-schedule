@@ -18,7 +18,7 @@ export const SubscriptionTemplates: CollectionConfig = {
   slug: 'subscription-templates',
   admin: {
     group: 'Cabinet',
-    defaultColumns: ['title', 'kind', 'totalCredits', 'updatedAt'],
+    defaultColumns: ['title', 'kind', 'totalCredits', 'price', 'durationDays', 'updatedAt'],
   },
   access: {
     read: () => true,
@@ -48,6 +48,24 @@ export const SubscriptionTemplates: CollectionConfig = {
       type: 'number',
       required: true,
       admin: { description: 'Сколько занятий входит в абонемент.' },
+      validate: (v: unknown) => (Number(v) > 0 ? true : 'Должно быть больше 0.'),
+    },
+    {
+      name: 'price',
+      type: 'number',
+      admin: {
+        description: 'Стоимость абонемента в рублях (для справки).',
+      },
+      validate: (v: unknown) =>
+        v == null || v === '' || Number(v) >= 0 ? true : 'Не может быть отрицательной.',
+    },
+    {
+      name: 'durationDays',
+      type: 'number',
+      defaultValue: 30,
+      admin: {
+        description: 'Срок действия по умолчанию (дней). Используется при привязке ученику.',
+      },
       validate: (v: unknown) => (Number(v) > 0 ? true : 'Должно быть больше 0.'),
     },
     {

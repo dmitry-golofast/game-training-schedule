@@ -54,6 +54,7 @@ type Template = {
   title: string
   kind: 'individual' | 'group'
   totalCredits: number
+  durationDays: number | null
 }
 
 export function StudentTabs({
@@ -385,6 +386,22 @@ function AssignSubscriptionDialog({
   const [state, formAction] = useActionState(assignSubscriptionAction, undefined)
   const [pending, startTransition] = useTransition()
   const [templateId, setTemplateId] = useState('')
+  const today = new Date().toISOString().slice(0, 10)
+  const [validFrom, setValidFrom] = useState(today)
+
+  // When the template changes, auto-fill validUntil = validFrom + durationDays.
+  const selectedTpl = templates.find((t) => t.id === templateId) ?? null
+  const validUntil = (() => {
+    if (!selectedTpl?.durationDays) return ''
+    const d = new Date(validFrom)
+    d.setDate(d.getDate() + selectedTpl.durationDays)
+    return d.toISOString().slice(0, 10)
+  })()
+
+  function handleTemplateChange(id: string) {
+    setTemplateId(id)
+    setValidFrom(today)
+  }
 
   useEffect(() => {
     if (!state) return
@@ -392,6 +409,7 @@ function AssignSubscriptionDialog({
       toast.success('Абонемент добавлен.')
       setOpen(false)
       setTemplateId('')
+      setValidFrom(today)
     } else if ('error' in state) {
       toast.error(state.error)
     }
@@ -420,7 +438,7 @@ function AssignSubscriptionDialog({
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="assign-template">Шаблон</Label>
-            <Select value={templateId} onValueChange={setTemplateId}>
+            <Select value={templateId} onValueChange={handleTemplateChange}>
               <SelectTrigger id="assign-template" className="w-full">
                 <SelectValue placeholder="Выберите шаблон" />
               </SelectTrigger>
@@ -428,6 +446,7 @@ function AssignSubscriptionDialog({
                 {templates.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.title} · {t.totalCredits} зан. ({t.kind === 'group' ? 'групп.' : 'индивид.'})
+                    {t.durationDays ? ` · ${t.durationDays} дн.` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -437,11 +456,25 @@ function AssignSubscriptionDialog({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="assign-from">Действует с</Label>
-              <Input id="assign-from" name="validFrom" type="date" required />
+              <Input
+                id="assign-from"
+                name="validFrom"
+                type="date"
+                value={validFrom}
+                onChange={(e) => setValidFrom(e.target.value)}
+                required
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="assign-until">Действует по</Label>
-              <Input id="assign-until" name="validUntil" type="date" required />
+              <Input
+                id="assign-until"
+                name="validUntil"
+                type="date"
+                value={validUntil}
+                defaultValue={validUntil}
+                required
+              />
             </div>
           </div>
 

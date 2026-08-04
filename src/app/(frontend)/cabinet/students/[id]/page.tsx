@@ -62,6 +62,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
     title: string
     kind: 'individual' | 'group'
     totalCredits: number
+    durationDays: number | null
   }[] = []
 
   try {
@@ -125,6 +126,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
       title: t.title,
       kind: t.kind === 'group' ? ('group' as const) : ('individual' as const),
       totalCredits: t.totalCredits,
+      durationDays: typeof t.durationDays === 'number' ? t.durationDays : null,
     }))
   } catch {
     // DB errors — render with empty sections.
