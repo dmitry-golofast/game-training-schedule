@@ -95,7 +95,7 @@ function renderBlock(block: Block) {
 }
 
 export default async function HomePage() {
-  await getCurrentUser()
+  const user = await getCurrentUser()
 
   let blocks: Block[] = []
   try {
@@ -124,7 +124,7 @@ export default async function HomePage() {
 
   return (
     <div className="landing-page flex min-h-svh flex-col">
-      <LandingNav />
+      <LandingNav isLoggedIn={Boolean(user)} />
       <main className="flex-1">
         {blocks.length === 0 ? (
           <div className="flex min-h-svh items-center justify-center px-4 text-center">

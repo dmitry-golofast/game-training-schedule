@@ -470,7 +470,7 @@ export function FinalCtaSection({ data }: { data?: Content['finalCta'] }) {
 }
 
 // ── Nav ──
-export function LandingNav() {
+export function LandingNav({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   return (
     <header
       className="sticky top-0 z-50 border-b backdrop-blur-md"
@@ -491,19 +491,31 @@ export function LandingNav() {
           />
         </Link>
         <nav className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="text-muted-landing text-sm font-medium transition-colors hover:text-white"
-          >
-            Войти
-          </Link>
-          <Link
-            href="/register"
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors"
-            style={{ backgroundColor: 'var(--landing-accent)' }}
-          >
-            Регистрация
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              href="/cabinet"
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors"
+              style={{ backgroundColor: 'var(--landing-accent)' }}
+            >
+              Личный кабинет
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-muted-landing text-sm font-medium transition-colors hover:text-white"
+              >
+                Войти
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors"
+                style={{ backgroundColor: 'var(--landing-accent)' }}
+              >
+                Регистрация
+              </Link>
+            </>
+          )}
         </nav>
       </div>
     </header>
