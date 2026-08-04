@@ -57,6 +57,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   let documents: AnyDoc[] = []
   let sickLeaves: AnyDoc[] = []
   let scheduleSlots: AnyDoc[] = []
+  let templates: { id: string; title: string; kind: string; totalCredits: number }[] = []
 
   try {
     const [subsResult, paymentsResult, docsResult, sickResult, slotsResult, tplResult] =
@@ -114,7 +115,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
     sickLeaves = sickResult.docs
     scheduleSlots = slotsResult.docs
 
-    const templates = tplResult.docs.map((t) => ({
+    templates = tplResult.docs.map((t) => ({
       id: t.id,
       title: t.title,
       kind: t.kind,
