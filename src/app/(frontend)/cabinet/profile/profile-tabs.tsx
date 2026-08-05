@@ -6,6 +6,7 @@ import { ChildrenSection } from '@/app/(frontend)/cabinet/profile/children-secti
 import { DocumentsSection } from '@/app/(frontend)/cabinet/profile/documents-section'
 import { PaymentHistory } from '@/app/(frontend)/cabinet/profile/payment-history'
 import { PreferencesForm } from '@/app/(frontend)/cabinet/profile/preferences-form'
+import { ProfileEditForm } from '@/app/(frontend)/cabinet/profile/profile-edit-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
@@ -61,7 +62,20 @@ export function ProfileTabs({
   isParent,
   reminderLeadHours,
 }: {
-  account: { name: string; email: string; role: string }
+  account: {
+    id: string
+    name: string
+    email: string
+    role: string
+    rawRole: string
+    firstName?: string | null
+    lastName?: string | null
+    middleName?: string | null
+    birthDate?: string | null
+    phone?: string | null
+    parentPhone?: string | null
+    avatarUrl?: string | null
+  }
   children: ChildRef[]
   subscriptions: Subscription[]
   payments: Payment[]
@@ -125,12 +139,31 @@ export function ProfileTabs({
           <div className="flex flex-col gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Данные аккаунта</CardTitle>
-                <CardDescription>Эти данные видны только вам и администраторам.</CardDescription>
+                <CardTitle>Личные данные</CardTitle>
+                <CardDescription>
+                  ФИО, дата рождения, телефон и фотография. Видны только вам и администраторам.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProfileEditForm
+                  firstName={account.firstName ?? null}
+                  lastName={account.lastName ?? null}
+                  middleName={account.middleName ?? null}
+                  birthDate={account.birthDate ?? null}
+                  phone={account.phone ?? null}
+                  parentPhone={account.parentPhone ?? null}
+                  role={account.rawRole}
+                  avatarUrl={account.avatarUrl ?? null}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Учётная запись</CardTitle>
+                <CardDescription>Email и роль изменить нельзя.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                <Row label="Имя" value={account.name || '—'} />
-                <Separator />
                 <Row label="Email" value={account.email} />
                 <Separator />
                 <Row label="Роль" value={account.role} />
@@ -230,10 +263,16 @@ export function ProfileTabs({
           <Card>
             <CardHeader>
               <CardTitle>Настройки</CardTitle>
-              <CardDescription>Имя для отображения и напоминания.</CardDescription>
+              <CardDescription>
+                Имя для отображения и время напоминания о тренировке.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <PreferencesForm name={account.name || null} reminderLeadHours={reminderLeadHours} />
+              <PreferencesForm
+                firstName={account.firstName ?? null}
+                lastName={account.lastName ?? null}
+                reminderLeadHours={reminderLeadHours}
+              />
             </CardContent>
           </Card>
         )}

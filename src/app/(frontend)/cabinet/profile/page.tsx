@@ -1,5 +1,6 @@
 import { ProfileTabs } from '@/app/(frontend)/cabinet/profile/profile-tabs'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { resolveAvatarUrl } from '@/lib/profile'
 import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Профиль' }
@@ -11,6 +12,17 @@ export default async function ProfilePage() {
   if (!me) return null
 
   const payload = await getPayloadClient()
+
+  // Reload the user with the avatar media populated (depth:1) so we can show
+  // the avatar URL. getCurrentUser() returns the JWT payload, where `avatar`
+  // is a bare id without a URL.
+  const detailed = await payload.findByID({
+    collection: 'users',
+    id: me.id,
+    overrideAccess: false,
+    user: me,
+    depth: 1,
+  })
 
   // Resolve which students this viewer can see documents/subscriptions/payments for.
   //  - user  → self (role user)
@@ -148,7 +160,20 @@ export default async function ProfilePage() {
       </div>
 
       <ProfileTabs
-        account={{ name: me.name ?? '', email: me.email, role: roleLabel }}
+        account={{
+          id: me.id,
+          name: detailed.name ?? '',
+          email: me.email,
+          role: roleLabel,
+          rawRole: me.role,
+          firstName: detailed.firstName ?? null,
+          lastName: detailed.lastName ?? null,
+          middleName: detailed.middleName ?? null,
+          birthDate: detailed.birthDate ?? null,
+          phone: detailed.phone ?? null,
+          parentPhone: detailed.parentPhone ?? null,
+          avatarUrl: resolveAvatarUrl(detailed.avatar),
+        }}
         children={childrenData}
         subscriptions={subscriptions}
         payments={payments}

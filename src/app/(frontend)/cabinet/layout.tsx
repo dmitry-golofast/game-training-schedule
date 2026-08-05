@@ -3,7 +3,8 @@ import * as React from 'react'
 
 import { CabinetShell } from '@/components/cabinet/cabinet-shell'
 import { TimezoneSync } from '@/components/cabinet/timezone-sync'
-import { getCurrentUser } from '@/lib/payload'
+import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { resolveAvatarUrl } from '@/lib/profile'
 
 /**
  * Server-side route guard for the whole cabinet route group.
@@ -17,8 +18,20 @@ export default async function CabinetLayout(props: { children: React.ReactNode }
     redirect('/login')
   }
 
+  // Populate the avatar media so we can pass its public URL down to UserMenu.
+  // getCurrentUser() returns the JWT payload, where `avatar` is a bare id.
+  const payload = await getPayloadClient()
+  const detailed = await payload.findByID({
+    collection: 'users',
+    id: user.id,
+    overrideAccess: false,
+    user,
+    depth: 1,
+  })
+  const avatarUrl = resolveAvatarUrl(detailed.avatar)
+
   return (
-    <CabinetShell user={user}>
+    <CabinetShell user={user} avatarUrl={avatarUrl}>
       <TimezoneSync storedTimezone={user.timezone ?? null} />
       {props.children}
     </CabinetShell>

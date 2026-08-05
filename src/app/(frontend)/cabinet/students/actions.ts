@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
 import { isAdminLike } from '@/lib/roles'
+import { buildDisplayName, computeAge, uploadAvatarFile } from '@/lib/profile'
 
 /**
  * Generate a random temporary password for a new student.
@@ -18,30 +19,13 @@ function generateTempPassword(): string {
   return out
 }
 
-/** Compute age in full years from a birth date string. Returns null if invalid. */
-function computeAge(birthDate: string): number | null {
-  const d = new Date(birthDate)
-  if (Number.isNaN(d.getTime())) return null
-  const now = new Date()
-  let age = now.getFullYear() - d.getFullYear()
-  const monthDiff = now.getMonth() - d.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < d.getDate())) {
-    age -= 1
-  }
-  return age >= 0 ? age : null
-}
-
-/** Build a display name from name parts. */
-function buildDisplayName(firstName: string, lastName: string, middleName: string): string {
-  return [lastName, firstName, middleName].filter(Boolean).join(' ').trim()
-}
-
 /** Shared field extraction + validation for create and update. */
 function parseStudentFields(formData: FormData) {
   const firstName = String(formData.get('firstName') ?? '').trim()
   const lastName = String(formData.get('lastName') ?? '').trim()
   const middleName = String(formData.get('middleName') ?? '').trim()
   const birthDate = String(formData.get('birthDate') ?? '').trim()
+  const phone = String(formData.get('phone') ?? '').trim()
   const parentPhone = String(formData.get('parentPhone') ?? '').trim()
 
   if (!firstName || !lastName) {
@@ -68,7 +52,9 @@ function parseStudentFields(formData: FormData) {
       lastName,
       middleName: middleName || undefined,
       birthDate: birthDate || undefined,
-      parentPhone: parentPhone || undefined,
+      phone: phone || undefined,
+      // For adult students, drop any stale parentPhone on save.
+      parentPhone: isMinor ? parentPhone || undefined : undefined,
       name,
     },
     isMinor,
@@ -178,13 +164,27 @@ export async function updateStudentAction(
     return { success: false, error: parsed.error }
   }
 
+  // Avatar: upload new / clear existing / leave as-is.
+  const clearAvatar = formData.get('clearAvatar') === '1'
+  const uploaded = await uploadAvatarFile(formData, 'avatar')
+  if (uploaded && 'error' in uploaded) {
+    return { success: false, error: uploaded.error }
+  }
+
+  const data: Record<string, unknown> = { ...parsed.data }
+  if (uploaded && 'id' in uploaded) {
+    data.avatar = uploaded.id
+  } else if (clearAvatar) {
+    data.avatar = null
+  }
+
   const payload = await getPayloadClient()
   try {
     await payload.update({
       collection: 'users',
       id,
       overrideAccess: true,
-      data: parsed.data,
+      data,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

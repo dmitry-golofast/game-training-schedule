@@ -114,9 +114,23 @@ export default function RegisterPage() {
           </div>
         )}
 
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="lastName">
+              Фамилия <span className="text-destructive">*</span>
+            </Label>
+            <Input id="lastName" name="lastName" type="text" autoComplete="family-name" required />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="firstName">
+              Имя <span className="text-destructive">*</span>
+            </Label>
+            <Input id="firstName" name="firstName" type="text" autoComplete="given-name" required />
+          </div>
+        </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="name">Имя</Label>
-          <Input id="name" name="name" type="text" autoComplete="name" />
+          <Label htmlFor="middleName">Отчество</Label>
+          <Input id="middleName" name="middleName" type="text" autoComplete="additional-name" />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">Email</Label>

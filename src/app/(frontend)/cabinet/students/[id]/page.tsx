@@ -3,25 +3,24 @@ import Link from 'next/link'
 
 import { EditStudentDialog } from '@/app/(frontend)/cabinet/students/[id]/edit-student-dialog'
 import { StudentTabs } from '@/app/(frontend)/cabinet/students/[id]/student-tabs'
-import { Card, CardContent } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getCurrentUser, getPayloadClient } from '@/lib/payload'
+import { computeAge, resolveAvatarUrl } from '@/lib/profile'
 import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Профиль ученика' }
 
-function computeAge(birthDate?: string | null): number | null {
-  if (!birthDate) return null
-  const d = new Date(birthDate)
-  if (Number.isNaN(d.getTime())) return null
-  const now = new Date()
-  let age = now.getFullYear() - d.getFullYear()
-  const m = now.getMonth() - d.getMonth()
-  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1
-  return age >= 0 ? age : null
-}
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyDoc = any
+
+function initials(value?: string | null) {
+  if (!value) return '?'
+  return value
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
 
 export default async function StudentProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const me = await getCurrentUser()
@@ -46,6 +45,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   if (!student || student.role !== 'user') notFound()
 
   const age = computeAge(student.birthDate)
+  const avatarUrl = resolveAvatarUrl(student.avatar)
   const parentDoc = typeof student.parent === 'object' && student.parent ? student.parent : null
   const fullName = [student.lastName, student.firstName, student.middleName]
     .filter(Boolean)
@@ -136,15 +136,25 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <Link href="/cabinet/students" className="text-xs text-muted-foreground hover:underline">
-            ← Назад к списку
-          </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">{fullName || 'Ученик'}</h1>
-          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-            {age !== null ? <span>{age} лет</span> : null}
-            <span>{student.email}</span>
-            {student.parentPhone ? <span>{student.parentPhone}</span> : null}
+        <div className="flex items-center gap-3">
+          <Avatar className="size-12 shrink-0">
+            {avatarUrl ? <AvatarImage src={avatarUrl} alt={fullName || 'Ученик'} /> : null}
+            <AvatarFallback>{initials(fullName)}</AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col gap-1">
+            <Link
+              href="/cabinet/students"
+              className="text-xs text-muted-foreground hover:underline"
+            >
+              ← Назад к списку
+            </Link>
+            <h1 className="text-2xl font-semibold tracking-tight">{fullName || 'Ученик'}</h1>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
+              {age !== null ? <span>{age} лет</span> : null}
+              <span>{student.email}</span>
+              {student.phone ? <span>тел: {student.phone}</span> : null}
+              {student.parentPhone ? <span>родитель: {student.parentPhone}</span> : null}
+            </div>
           </div>
         </div>
         <EditStudentDialog
@@ -154,7 +164,9 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             lastName: student.lastName ?? null,
             middleName: student.middleName ?? null,
             birthDate: student.birthDate ?? null,
+            phone: student.phone ?? null,
             parentPhone: student.parentPhone ?? null,
+            avatarUrl,
           }}
         />
       </div>

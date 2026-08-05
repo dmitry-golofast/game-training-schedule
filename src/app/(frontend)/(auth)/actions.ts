@@ -4,6 +4,7 @@ import { cookies } from 'next/headers.js'
 import { redirect } from 'next/navigation'
 
 import { getPayloadClient } from '@/lib/payload'
+import { buildDisplayName } from '@/lib/profile-shared'
 
 // Payload stores its JWT in this httpOnly cookie. Must match the default
 // configured by Payload (see `auth.cookies` in buildConfig to override).
@@ -104,16 +105,24 @@ export async function registerAction(_prev: unknown, formData: FormData) {
     .trim()
     .toLowerCase()
   const password = String(formData.get('password') ?? '')
-  const name = String(formData.get('name') ?? '').trim()
+  const firstName = String(formData.get('firstName') ?? '').trim()
+  const lastName = String(formData.get('lastName') ?? '').trim()
+  const middleName = String(formData.get('middleName') ?? '').trim()
   const rawRole = String(formData.get('role') ?? 'user')
   const inviteCode = String(formData.get('inviteCode') ?? '').trim()
 
   if (!email || !password) {
     return { error: 'Заполните все обязательные поля.' }
   }
+  if (!firstName || !lastName) {
+    return { error: 'Имя и фамилия обязательны.' }
+  }
   if (password.length < 8) {
     return { error: 'Пароль должен быть не короче 8 символов.' }
   }
+
+  // `name` is a read-only display field auto-generated from the name parts.
+  const name = buildDisplayName(firstName, lastName, middleName)
 
   // Determine the final role server-side.
   const requestedRole: 'user' | 'parent' | 'trainer' =
@@ -141,7 +150,15 @@ export async function registerAction(_prev: unknown, formData: FormData) {
   try {
     await payload.create({
       collection: 'users',
-      data: { email, password, name, role },
+      data: {
+        email,
+        password,
+        firstName,
+        lastName,
+        middleName: middleName || undefined,
+        name,
+        role,
+      },
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

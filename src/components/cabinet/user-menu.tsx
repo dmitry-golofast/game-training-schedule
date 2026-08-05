@@ -34,8 +34,10 @@ const ROLE_LABELS: Record<string, string> = {
 
 export function UserMenu({
   user,
+  avatarUrl,
 }: {
   user: { email: string; name?: string | null; role?: string | null }
+  avatarUrl?: string | null
 }) {
   const [isPending, startTransition] = useTransition()
 
@@ -50,7 +52,7 @@ export function UserMenu({
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full">
           <Avatar>
-            <AvatarImage alt={user.name ?? user.email} />
+            {avatarUrl ? <AvatarImage src={avatarUrl} alt={user.name ?? user.email} /> : null}
             <AvatarFallback>{initials(user.name ?? user.email)}</AvatarFallback>
           </Avatar>
         </Button>

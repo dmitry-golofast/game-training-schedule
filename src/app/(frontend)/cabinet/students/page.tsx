@@ -2,11 +2,22 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { StudentsClient } from '@/app/(frontend)/cabinet/students/students-client'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getPayloadClient, getCurrentUser } from '@/lib/payload'
+import { computeAge, resolveAvatarUrl } from '@/lib/profile'
 import { isAdminLike } from '@/lib/roles'
 
 export const metadata = { title: 'Ученики' }
+
+function initials(value?: string | null) {
+  if (!value) return '?'
+  return value
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
 
 export default async function StudentsPage() {
   const me = await getCurrentUser()
@@ -18,13 +29,14 @@ export default async function StudentsPage() {
 
   const payload = await getPayloadClient()
 
-  // All students (admin bypasses access).
+  // All students (admin bypasses access). depth:1 populates avatar + parent.
   const studentsResult = await payload.find({
     collection: 'users',
     where: { role: { equals: 'user' } },
     sort: '-createdAt',
     limit: 100,
     overrideAccess: true,
+    depth: 1,
   })
 
   // Candidate parents for the create-student form.
@@ -65,21 +77,43 @@ export default async function StudentsPage() {
             <ul className="divide-y divide-border">
               {studentsResult.docs.map((student) => {
                 const parentUser = typeof student.parent === 'object' ? student.parent : null
+                const avatarUrl = resolveAvatarUrl(student.avatar)
+                const age = computeAge(student.birthDate)
+                const isMinor = age !== null && age < 18
+                const fullName =
+                  [student.lastName, student.firstName].filter(Boolean).join(' ') ||
+                  student.name ||
+                  'Без имени'
                 return (
                   <li key={student.id}>
                     <Link
                       href={`/cabinet/students/${student.id}`}
-                      className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-accent"
+                      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent"
                     >
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-medium">{student.name || 'Без имени'}</span>
-                        <span className="text-xs text-muted-foreground">{student.email}</span>
+                      <Avatar className="size-10 shrink-0">
+                        {avatarUrl ? <AvatarImage src={avatarUrl} alt={fullName} /> : null}
+                        <AvatarFallback>{initials(fullName)}</AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="truncate font-medium">{fullName}</span>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                          <span className="truncate">{student.email}</span>
+                          {age !== null ? <span>· {age} лет</span> : null}
+                          {student.phone ? (
+                            <span className="truncate">· тел: {student.phone}</span>
+                          ) : null}
+                          {isMinor && student.parentPhone ? (
+                            <span className="truncate">· родитель: {student.parentPhone}</span>
+                          ) : null}
+                        </div>
                       </div>
+
                       <div className="flex items-center gap-3">
-                        <div className="text-right text-xs text-muted-foreground">
+                        <div className="hidden text-right text-xs text-muted-foreground sm:block">
                           {parentUser ? (
                             <span>
-                              Родитель:{' '}
+                              Акк. родителя:{' '}
                               <span className="font-medium text-foreground">
                                 {parentUser.name || parentUser.email}
                               </span>

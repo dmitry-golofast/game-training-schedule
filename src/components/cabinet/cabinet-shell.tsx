@@ -136,7 +136,15 @@ function TabBarButton({
   )
 }
 
-export function CabinetShell({ user, children }: { user: User; children: React.ReactNode }) {
+export function CabinetShell({
+  user,
+  avatarUrl,
+  children,
+}: {
+  user: User
+  avatarUrl?: string | null
+  children: React.ReactNode
+}) {
   const nav = buildNav(user.role)
   const [menuOpen, setMenuOpen] = React.useState(false)
 
@@ -169,7 +177,7 @@ export function CabinetShell({ user, children }: { user: User; children: React.R
           {/* Controls */}
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <UserMenu user={user} />
+            <UserMenu user={user} avatarUrl={avatarUrl} />
           </div>
         </div>
       </header>

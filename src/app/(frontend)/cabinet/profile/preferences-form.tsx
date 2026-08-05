@@ -28,10 +28,12 @@ function SubmitButton() {
 }
 
 export function PreferencesForm({
-  name,
+  firstName,
+  lastName,
   reminderLeadHours,
 }: {
-  name: string | null
+  firstName: string | null
+  lastName: string | null
   reminderLeadHours: number
 }) {
   const [state, dispatch] = useActionState(updateProfileAction, undefined)
@@ -46,14 +48,19 @@ export function PreferencesForm({
 
   return (
     <form action={dispatch} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="pref-name">Имя</Label>
-        <Input
-          id="pref-name"
-          name="name"
-          defaultValue={name ?? ''}
-          placeholder="Как к вам обращаться"
-        />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="pref-firstName">
+            Имя <span className="text-destructive">*</span>
+          </Label>
+          <Input id="pref-firstName" name="firstName" defaultValue={firstName ?? ''} required />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="pref-lastName">
+            Фамилия <span className="text-destructive">*</span>
+          </Label>
+          <Input id="pref-lastName" name="lastName" defaultValue={lastName ?? ''} required />
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

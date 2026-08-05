@@ -94,10 +94,18 @@ export const Users: CollectionConfig = {
       admin: { description: 'Дата рождения' },
     },
     {
+      name: 'phone',
+      type: 'text',
+      admin: {
+        description:
+          'Мой телефон. Для тренера/администратора — основной контактный. Для ученика 18+ — его собственный; для ученика младше 18 — необязательный (рядом с телефоном родителя).',
+      },
+    },
+    {
       name: 'parentPhone',
       type: 'text',
       admin: {
-        description: 'Телефон родителя (обязательно для учащихся до 18 лет).',
+        description: 'Телефон родителя (обязателен для учеников младше 18 лет).',
         condition: (data) => data.role === 'user',
       },
     },

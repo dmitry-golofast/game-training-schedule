@@ -166,7 +166,11 @@ export interface User {
    */
   birthDate?: string | null;
   /**
-   * Телефон родителя (обязательно для учащихся до 18 лет).
+   * Мой телефон. Для тренера/администратора — основной контактный. Для ученика 18+ — его собственный; для ученика младше 18 — необязательный (рядом с телефоном родителя).
+   */
+  phone?: string | null;
+  /**
+   * Телефон родителя (обязателен для учеников младше 18 лет).
    */
   parentPhone?: string | null;
   role: 'user' | 'parent' | 'trainer' | 'admin';
@@ -782,6 +786,7 @@ export interface UsersSelect<T extends boolean = true> {
   firstName?: T;
   middleName?: T;
   birthDate?: T;
+  phone?: T;
   parentPhone?: T;
   role?: T;
   parent?: T;

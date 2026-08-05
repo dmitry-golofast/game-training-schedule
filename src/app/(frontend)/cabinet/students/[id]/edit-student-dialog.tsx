@@ -1,10 +1,11 @@
 'use client'
 
-import { PencilIcon } from 'lucide-react'
-import { useActionState, useEffect, useState, useTransition } from 'react'
+import { CameraIcon, PencilIcon, Trash2Icon } from 'lucide-react'
+import { useActionState, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { updateStudentAction } from '@/app/(frontend)/cabinet/students/actions'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { computeAge } from '@/lib/profile-shared'
 
 type StudentData = {
   id: string
@@ -24,44 +26,97 @@ type StudentData = {
   lastName?: string | null
   middleName?: string | null
   birthDate?: string | null
+  phone?: string | null
   parentPhone?: string | null
+  avatarUrl?: string | null
 }
 
-function ageFromBirth(value: string): number | null {
-  if (!value) return null
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return null
-  const now = new Date()
-  let age = now.getFullYear() - d.getFullYear()
-  const m = now.getMonth() - d.getMonth()
-  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1
-  return age >= 0 ? age : null
+function initials(value?: string | null) {
+  if (!value) return '?'
+  return value
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
 }
 
 function EditForm({ student, onDone }: { student: StudentData; onDone: () => void }) {
   const [state, formAction] = useActionState(updateStudentAction, undefined)
-  const [pending, startTransition] = useTransition()
+  const [pending, setPending] = useState(false)
   const [birthDate, setBirthDate] = useState(student.birthDate?.slice(0, 10) ?? '')
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(student.avatarUrl ?? null)
+  const [removeAvatar, setRemoveAvatar] = useState(false)
 
-  const age = ageFromBirth(birthDate)
+  const age = computeAge(birthDate)
   const isMinor = age !== null && age < 18
 
   useEffect(() => {
     if (state?.success) {
-      toast.success('Профиль обновлён.')
+      toast.success('Профиль ученика обновлён.')
+      setPending(false)
       onDone()
     } else if (state?.error) {
       toast.error(state.error)
+      setPending(false)
     }
   }, [state, onDone])
 
+  const fullName = [student.lastName, student.firstName].filter(Boolean).join(' ') || undefined
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setAvatarPreview(URL.createObjectURL(file))
+      setRemoveAvatar(false)
+    }
+  }
+
   return (
-    <form
-      action={formAction}
-      onSubmit={() => startTransition(() => {})}
-      className="flex flex-col gap-4"
-    >
+    <form action={formAction} onSubmit={() => setPending(true)} className="flex flex-col gap-4">
       <input type="hidden" name="id" value={student.id} />
+
+      {/* Avatar */}
+      <div className="flex items-center gap-4">
+        <div className="relative">
+          <Avatar className="size-16">
+            {avatarPreview && !removeAvatar ? (
+              <AvatarImage src={avatarPreview} alt={fullName ?? 'avatar'} />
+            ) : null}
+            <AvatarFallback>{initials(fullName)}</AvatarFallback>
+          </Avatar>
+          <label
+            htmlFor="edit-avatar-upload"
+            className="absolute -right-1 -bottom-1 flex size-6 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            title="Загрузить фото"
+          >
+            <CameraIcon className="size-3.5" />
+          </label>
+          <input
+            id="edit-avatar-upload"
+            type="file"
+            name="avatar"
+            accept="image/*"
+            className="hidden"
+            onChange={onFileChange}
+          />
+        </div>
+        {avatarPreview && !removeAvatar ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            onClick={() => {
+              setRemoveAvatar(true)
+              setAvatarPreview(null)
+            }}
+          >
+            <Trash2Icon className="size-4" />
+            Удалить фото
+          </Button>
+        ) : null}
+        {removeAvatar ? <input type="hidden" name="clearAvatar" value="1" /> : null}
+      </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
@@ -113,19 +168,32 @@ function EditForm({ student, onDone }: { student: StudentData; onDone: () => voi
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="edit-parentPhone">
-          Телефон родителя
-          {isMinor ? <span className="text-destructive"> *</span> : null}
-        </Label>
+        <Label htmlFor="edit-phone">Мой телефон</Label>
         <Input
-          id="edit-parentPhone"
-          name="parentPhone"
+          id="edit-phone"
+          name="phone"
           type="tel"
-          defaultValue={student.parentPhone ?? ''}
+          defaultValue={student.phone ?? ''}
           placeholder="+7 ..."
-          required={isMinor}
         />
       </div>
+
+      {isMinor ? (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="edit-parentPhone">
+            Телефон родителя
+            {isMinor ? <span className="text-destructive"> *</span> : null}
+          </Label>
+          <Input
+            id="edit-parentPhone"
+            name="parentPhone"
+            type="tel"
+            defaultValue={student.parentPhone ?? ''}
+            placeholder="+7 ..."
+            required={isMinor}
+          />
+        </div>
+      ) : null}
 
       <DialogFooter>
         <Button type="submit" disabled={pending}>
@@ -150,7 +218,9 @@ export function EditStudentDialog({ student }: { student: StudentData }) {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Редактирование ученика</DialogTitle>
-          <DialogDescription>Изменение личных данных ученика.</DialogDescription>
+          <DialogDescription>
+            Изменение личных данных, телефона и фотографии ученика.
+          </DialogDescription>
         </DialogHeader>
         <EditForm student={student} onDone={() => setOpen(false)} />
       </DialogContent>
