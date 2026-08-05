@@ -96,10 +96,11 @@ export function PeriodToolbar({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
       {/* Row 1: prev/today/next (left) + view switcher (right).
-          On mobile these share one row so the toolbar stays compact; on
-          desktop the title takes the middle and the switcher sits at the end. */}
-      <div className="flex items-center justify-between gap-2 sm:justify-start">
-        <div className="flex items-center gap-1">
+          On mobile these stack on separate full-width rows so the toolbar
+          stays compact and never overflows; on desktop the title takes the
+          middle and the switcher sits at the end. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start sm:gap-2">
+        <div className="flex items-center justify-center gap-1 sm:justify-start">
           <Button variant="outline" size="icon" onClick={onPrev} aria-label="Предыдущий период">
             <ChevronLeftIcon />
           </Button>
@@ -111,15 +112,15 @@ export function PeriodToolbar({
           </Button>
         </div>
 
-        {/* View switcher — shown inline on mobile, moved to the end on desktop. */}
-        <div className="inline-flex rounded-lg bg-muted p-0.5 text-muted-foreground sm:hidden">
+        {/* View switcher — full width on mobile, inline on desktop. */}
+        <div className="inline-flex w-full justify-center rounded-lg bg-muted p-0.5 text-muted-foreground sm:hidden sm:w-auto">
           {VIEW_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
               onClick={() => navigate({ view: opt.value })}
               className={cn(
-                'rounded-md px-2.5 py-1 text-sm font-medium transition-colors',
+                'flex-1 rounded-md px-2.5 py-1 text-sm font-medium transition-colors sm:flex-none',
                 view === opt.value
                   ? 'bg-background text-foreground shadow-sm'
                   : 'hover:text-foreground',
@@ -133,7 +134,7 @@ export function PeriodToolbar({
 
       {/* Title — centered on mobile (own row), right-aligned on desktop. */}
       <div className="flex flex-col items-center text-center sm:items-end sm:text-right">
-        <h2 className="text-lg font-semibold tracking-tight capitalize">{title}</h2>
+        <h2 className="text-lg font-semibold tracking-tight break-words capitalize">{title}</h2>
         <span className="text-xs text-muted-foreground">{timezoneLabel(timezone, cursor)}</span>
       </div>
 

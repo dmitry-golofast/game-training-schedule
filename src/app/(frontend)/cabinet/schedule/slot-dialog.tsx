@@ -222,9 +222,9 @@ function SlotForm({
               <SelectTrigger id="slot-group" className="w-full">
                 <SelectValue placeholder="Выберите группу" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[90vw]">
                 {groups.map((g) => (
-                  <SelectItem key={g.id} value={g.id}>
+                  <SelectItem key={g.id} value={g.id} className="break-words whitespace-normal">
                     {g.name}
                   </SelectItem>
                 ))}
@@ -244,9 +244,9 @@ function SlotForm({
               <SelectTrigger id="slot-student" className="w-full">
                 <SelectValue placeholder="Выберите ученика" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[90vw]">
                 {students.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
+                  <SelectItem key={s.id} value={s.id} className="break-words whitespace-normal">
                     {s.name} ({s.email})
                   </SelectItem>
                 ))}
@@ -309,7 +309,7 @@ function SlotForm({
                       setRecurrence((prev) => ({ ...prev, interval: Number(v) }))
                     }
                   >
-                    <SelectTrigger className="w-20">
+                    <SelectTrigger className="w-20 shrink-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -330,7 +330,7 @@ function SlotForm({
                       }))
                     }
                   >
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-32 shrink-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -343,7 +343,7 @@ function SlotForm({
                 {recurrence.frequency === 'weekly' ? (
                   <div className="flex flex-col gap-1.5">
                     <span className="text-xs text-muted-foreground">Дни недели</span>
-                    <div className="flex gap-1">
+                    <div className="flex flex-wrap gap-1">
                       {WEEKDAY_BUTTONS.map(({ value, label }) => {
                         const active = recurrence.weekdays.includes(value)
                         return (
@@ -359,7 +359,7 @@ function SlotForm({
                               }))
                             }
                             className={cn(
-                              'flex size-10 items-center justify-center rounded-md border text-xs font-medium transition-colors',
+                              'flex size-9 items-center justify-center rounded-md border text-xs font-medium transition-colors sm:size-10',
                               active
                                 ? 'border-primary bg-primary text-primary-foreground'
                                 : 'hover:bg-accent',
@@ -381,7 +381,7 @@ function SlotForm({
                   <span className="text-xs text-muted-foreground">
                     Окончание (укажите дату ИЛИ количество)
                   </span>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     <Input
                       type="date"
                       name="recurrence.until"
@@ -389,7 +389,7 @@ function SlotForm({
                       onChange={(e) =>
                         setRecurrence((prev) => ({ ...prev, until: e.target.value }))
                       }
-                      className="w-44"
+                      className="w-full sm:w-44"
                       placeholder="Дата"
                     />
                     <Input
@@ -401,7 +401,7 @@ function SlotForm({
                       onChange={(e) =>
                         setRecurrence((prev) => ({ ...prev, count: e.target.value }))
                       }
-                      className="w-28"
+                      className="w-full sm:w-28"
                       placeholder="Кол-во"
                     />
                   </div>

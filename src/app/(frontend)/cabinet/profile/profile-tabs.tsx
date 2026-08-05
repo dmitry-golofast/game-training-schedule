@@ -206,12 +206,12 @@ export function ProfileTabs({
                         : 0
                     return (
                       <div key={sub.id} className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="min-w-0 text-sm font-medium break-words">
                             {sub.student?.name ?? ''} ·{' '}
                             {sub.kind === 'group' ? 'Групповой' : 'Индивидуальный'}
                           </span>
-                          <span className="text-sm">
+                          <span className="shrink-0 text-sm whitespace-nowrap">
                             Осталось <span className="font-semibold">{sub.remainingCredits}</span>{' '}
                             из {sub.totalCredits}
                           </span>
