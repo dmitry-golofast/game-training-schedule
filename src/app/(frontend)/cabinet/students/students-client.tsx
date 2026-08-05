@@ -160,9 +160,13 @@ function StudentForm({ parents, onDone }: { parents: Parent[]; onDone: () => voi
           <SelectTrigger id="student-parent" className="w-full">
             <SelectValue placeholder={isMinor ? 'Выберите родителя' : 'Без родителя'} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-w-[90vw]">
             {parents.map((parent) => (
-              <SelectItem key={parent.id} value={parent.id}>
+              <SelectItem
+                key={parent.id}
+                value={parent.id}
+                className="break-words whitespace-normal"
+              >
                 {parent.name} ({parent.email})
               </SelectItem>
             ))}

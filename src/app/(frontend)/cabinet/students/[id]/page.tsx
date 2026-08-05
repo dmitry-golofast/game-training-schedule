@@ -135,25 +135,31 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <Avatar className="size-12 shrink-0">
             {avatarUrl ? <AvatarImage src={avatarUrl} alt={fullName || 'Ученик'} /> : null}
             <AvatarFallback>{initials(fullName)}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-0 flex-col gap-1">
             <Link
               href="/cabinet/students"
               className="text-xs text-muted-foreground hover:underline"
             >
               ← Назад к списку
             </Link>
-            <h1 className="text-2xl font-semibold tracking-tight">{fullName || 'Ученик'}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight break-words">
+              {fullName || 'Ученик'}
+            </h1>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
               {age !== null ? <span>{age} лет</span> : null}
-              <span>{student.email}</span>
-              {student.phone ? <span>тел: {student.phone}</span> : null}
-              {student.parentPhone ? <span>родитель: {student.parentPhone}</span> : null}
+              <span className="break-all">{student.email}</span>
+              {student.phone ? (
+                <span className="whitespace-nowrap">тел: {student.phone}</span>
+              ) : null}
+              {student.parentPhone ? (
+                <span className="whitespace-nowrap">родитель: {student.parentPhone}</span>
+              ) : null}
             </div>
           </div>
         </div>

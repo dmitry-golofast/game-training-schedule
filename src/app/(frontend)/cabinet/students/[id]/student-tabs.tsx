@@ -214,10 +214,14 @@ export function StudentTabs({
 
         {activeTab === 'subscriptions' && (
           <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Абонементы ({subscriptions.length})</CardTitle>
+            <CardHeader className="flex-row items-center justify-between gap-3">
+              <CardTitle className="min-w-0 break-words">
+                Абонементы ({subscriptions.length})
+              </CardTitle>
               {isAdmin ? (
-                <AssignSubscriptionDialog studentId={student.id} templates={templates} />
+                <div className="shrink-0">
+                  <AssignSubscriptionDialog studentId={student.id} templates={templates} />
+                </div>
               ) : null}
             </CardHeader>
             <CardContent>
@@ -367,9 +371,9 @@ export function StudentTabs({
 
 function Row({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium">{value || '—'}</span>
+      <span className="text-sm font-medium break-words sm:text-right">{value || '—'}</span>
     </div>
   )
 }

@@ -92,9 +92,9 @@ export function DocumentsSection({
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Выберите ученика" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-w-[90vw]">
                   {students.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
+                    <SelectItem key={s.id} value={s.id} className="break-words whitespace-normal">
                       {s.name}
                     </SelectItem>
                   ))}
