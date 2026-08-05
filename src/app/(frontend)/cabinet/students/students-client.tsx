@@ -110,24 +110,30 @@ function StudentForm({ parents, onDone }: { parents: Parent[]; onDone: () => voi
         {age !== null ? (
           <p className="text-xs text-muted-foreground">
             Возраст: {age} лет
-            {isMinor ? ' (несовершеннолетний — телефон родителя обязателен)' : ''}
+            {isMinor ? ' (несовершеннолетний — укажите телефон и аккаунт родителя)' : ''}
           </p>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="student-parentPhone">
-          Телефон родителя
-          {isMinor ? <span className="text-destructive"> *</span> : null}
-        </Label>
-        <Input
-          id="student-parentPhone"
-          name="parentPhone"
-          type="tel"
-          placeholder="+7 ..."
-          required={isMinor}
-        />
+        <Label htmlFor="student-phone">Телефон ученика</Label>
+        <Input id="student-phone" name="phone" type="tel" placeholder="+7 ..." />
       </div>
+
+      {isMinor ? (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="student-parentPhone">
+            Телефон родителя <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="student-parentPhone"
+            name="parentPhone"
+            type="tel"
+            placeholder="+7 ..."
+            required={isMinor}
+          />
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="student-email">
@@ -150,29 +156,30 @@ function StudentForm({ parents, onDone }: { parents: Parent[]; onDone: () => voi
         </p>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="student-parent">
-          Родитель
-          {isMinor ? <span className="text-destructive"> *</span> : null}
-        </Label>
-        <input type="hidden" name="parentId" value={parentId} />
-        <Select value={parentId} onValueChange={setParentId}>
-          <SelectTrigger id="student-parent" className="w-full">
-            <SelectValue placeholder={isMinor ? 'Выберите родителя' : 'Без родителя'} />
-          </SelectTrigger>
-          <SelectContent className="max-w-[90vw]">
-            {parents.map((parent) => (
-              <SelectItem
-                key={parent.id}
-                value={parent.id}
-                className="break-words whitespace-normal"
-              >
-                {parent.name} ({parent.email})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {isMinor ? (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="student-parent">
+            Родитель <span className="text-destructive">*</span>
+          </Label>
+          <input type="hidden" name="parentId" value={parentId} />
+          <Select value={parentId} onValueChange={setParentId}>
+            <SelectTrigger id="student-parent" className="w-full">
+              <SelectValue placeholder="Выберите родителя" />
+            </SelectTrigger>
+            <SelectContent className="max-w-[90vw]">
+              {parents.map((parent) => (
+                <SelectItem
+                  key={parent.id}
+                  value={parent.id}
+                  className="break-words whitespace-normal"
+                >
+                  {parent.name} ({parent.email})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       <DialogFooter>
         <Button type="submit" disabled={pending}>
