@@ -246,6 +246,7 @@ export async function assignSubscriptionAction(
         kind: tpl.kind,
         totalCredits: tpl.totalCredits,
         remainingCredits: tpl.totalCredits,
+        price: typeof tpl.price === 'number' ? tpl.price : undefined,
         validFrom,
         validUntil,
         status: 'active',

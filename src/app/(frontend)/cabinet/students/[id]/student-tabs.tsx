@@ -248,9 +248,16 @@ export function StudentTabs({
                         <div className="h-2 overflow-hidden rounded-full bg-muted">
                           <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Действует с {sub.validFrom?.slice(0, 10)} до{' '}
-                          {sub.validUntil?.slice(0, 10)}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                          <span>
+                            Действует с {sub.validFrom?.slice(0, 10)} до{' '}
+                            {sub.validUntil?.slice(0, 10)}
+                          </span>
+                          {typeof sub.price === 'number' && sub.price > 0 ? (
+                            <span className="font-medium text-foreground">
+                              {sub.price.toLocaleString('ru-RU')} ₽
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                     )

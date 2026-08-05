@@ -16,7 +16,15 @@ export const Subscriptions: CollectionConfig = {
   slug: 'subscriptions',
   admin: {
     group: 'Cabinet',
-    defaultColumns: ['student', 'kind', 'totalCredits', 'remainingCredits', 'status', 'validUntil'],
+    defaultColumns: [
+      'student',
+      'kind',
+      'totalCredits',
+      'remainingCredits',
+      'price',
+      'status',
+      'validUntil',
+    ],
   },
   access: {
     read: studentOwnerScopedOrAdmin,
@@ -107,6 +115,15 @@ export const Subscriptions: CollectionConfig = {
       required: true,
       admin: { description: 'Сколько занятий куплено.' },
       validate: (v: unknown) => (Number(v) > 0 ? true : 'Должно быть больше 0.'),
+    },
+    {
+      name: 'price',
+      type: 'number',
+      admin: {
+        description: 'Стоимость абонемента в рублях (копируется из шаблона при создании).',
+      },
+      validate: (v: unknown) =>
+        v == null || v === '' || Number(v) >= 0 ? true : 'Не может быть отрицательной.',
     },
     {
       name: 'remainingCredits',

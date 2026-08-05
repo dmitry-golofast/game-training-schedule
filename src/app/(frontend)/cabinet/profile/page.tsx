@@ -105,6 +105,7 @@ export default async function ProfilePage() {
     kind: s.kind,
     totalCredits: s.totalCredits,
     remainingCredits: s.remainingCredits,
+    price: typeof s.price === 'number' ? s.price : null,
     validFrom: s.validFrom,
     validUntil: s.validUntil,
     status: s.status,

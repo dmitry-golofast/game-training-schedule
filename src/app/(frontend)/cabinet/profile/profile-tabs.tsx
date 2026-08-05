@@ -19,6 +19,7 @@ type Subscription = {
   kind: 'individual' | 'group'
   totalCredits: number
   remainingCredits: number
+  price?: number | null
   validFrom?: string | null
   validUntil?: string | null
   student?: { id: string; name: string } | null
@@ -219,8 +220,13 @@ export function ProfileTabs({
                         <div className="h-2 overflow-hidden rounded-full bg-muted">
                           <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Действует до: {sub.validUntil?.slice(0, 10)}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                          <span>Действует до: {sub.validUntil?.slice(0, 10)}</span>
+                          {typeof sub.price === 'number' && sub.price > 0 ? (
+                            <span className="font-medium text-foreground">
+                              {sub.price.toLocaleString('ru-RU')} ₽
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                     )

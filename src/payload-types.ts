@@ -359,6 +359,10 @@ export interface Subscription {
    */
   totalCredits: number;
   /**
+   * Стоимость абонемента в рублях (копируется из шаблона при создании).
+   */
+  price?: number | null;
+  /**
    * Осталось занятий (управляется системой).
    */
   remainingCredits: number;
@@ -900,6 +904,7 @@ export interface SubscriptionsSelect<T extends boolean = true> {
   student?: T;
   kind?: T;
   totalCredits?: T;
+  price?: T;
   remainingCredits?: T;
   validFrom?: T;
   validUntil?: T;
